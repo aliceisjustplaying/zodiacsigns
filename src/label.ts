@@ -17,21 +17,15 @@ export const label = async (subject: string | AppBskyActorDefs.ProfileView, rkey
 
   console.log(`Labeling ${did}...`);
 
-  const query = server.db.prepare<unknown[], ComAtprotoLabelDefs.Label>(`SELECT * FROM labels WHERE uri = ?`).all(did);
+  const sunQuery = server.db.prepare<unknown[], ComAtprotoLabelDefs.Label>(`SELECT * FROM labels WHERE uri = ? AND val LIKE 'aaa-sun-%' AND neg = false ORDER BY cts DESC LIMIT 1`).all(did);
+  const moonQuery = server.db.prepare<unknown[], ComAtprotoLabelDefs.Label>(`SELECT * FROM labels WHERE uri = ? AND val LIKE 'bbb-moon-%' AND neg = false ORDER BY cts DESC LIMIT 1`).all(did);
+  const risingQuery = server.db.prepare<unknown[], ComAtprotoLabelDefs.Label>(`SELECT * FROM labels WHERE uri = ? AND val LIKE 'ccc-rising-%' AND neg = false ORDER BY cts DESC LIMIT 1`).all(did);
 
   const labelCategories = {
-    sun: new Set<string>(),
-    moon: new Set<string>(),
-    rising: new Set<string>(),
+    sun: new Set<string>(sunQuery.map(label => label.val)),
+    moon: new Set<string>(moonQuery.map(label => label.val)),
+    rising: new Set<string>(risingQuery.map(label => label.val)),
   };
-
-  query.forEach((label) => {
-    if (!label.neg) {
-      if (label.val.startsWith('aaa-sun-')) labelCategories.sun.add(label.val);
-      else if (label.val.startsWith('bbb-moon-')) labelCategories.moon.add(label.val);
-      else if (label.val.startsWith('ccc-rising-')) labelCategories.rising.add(label.val);
-    }
-  });
 
   console.log('labelCategories:');
   console.dir(labelCategories, { depth: null });
