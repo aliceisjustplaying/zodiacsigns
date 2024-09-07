@@ -3,7 +3,7 @@ import {
   DID,
   PORT,
   LABEL_LIMIT,
-  POSTS,
+  SIGNS,
   SIGNING_KEY,
   DELETE,
 } from "./constants.js";
@@ -45,12 +45,12 @@ export const label = async (
         console.log(err);
       })
       .then(() => console.log(`Deleted labels for ${did}`));
-  } else if (labels.size < LABEL_LIMIT && POSTS[rkey]) {
+  } else if (labels.size < LABEL_LIMIT && SIGNS[rkey]) {
     await server
-      .createLabel({ uri: did, val: POSTS[rkey] })
+      .createLabel({ uri: did, val: SIGNS[rkey] })
       .catch((err) => {
         console.log(err);
       })
-      .then(() => console.log(`Labeled ${did} with ${POSTS[rkey]}`));
+      .then(() => console.log(`Labeled ${did} with ${SIGNS[rkey]}`));
   }
 };
