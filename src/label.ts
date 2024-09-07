@@ -15,6 +15,8 @@ server.start(PORT, (error, address) => {
 export const label = async (subject: string | AppBskyActorDefs.ProfileView, rkey: string) => {
   const did = AppBskyActorDefs.isProfileView(subject) ? subject.did : subject;
 
+  console.log(`Labeling ${did}...`);
+
   const query = server.db.prepare<unknown[], ComAtprotoLabelDefs.Label>(`SELECT * FROM labels WHERE uri = ?`).all(did);
 
   const labelCategories = {
@@ -31,7 +33,11 @@ export const label = async (subject: string | AppBskyActorDefs.ProfileView, rkey
     }
   });
 
+  console.log('labelCategories:');
+  console.dir(labelCategories, { depth: null });
+
   if (rkey.includes(DELETE)) {
+    console.log('Deleting all labels for', did);
     await server
       .createLabels(
         { uri: did },
@@ -40,13 +46,28 @@ export const label = async (subject: string | AppBskyActorDefs.ProfileView, rkey
       .catch((err) => {
         console.log(err);
       })
-      .then(() => console.log(`Deleted labels for ${did}`));
+      .then(() => console.log(`Deleted all labels for ${did}`));
   } else {
     const newLabel = findLabelByPost(rkey);
     if (newLabel) {
-      const [categoryToUpdate, canAddLabel] = getCategoryAndAddability(newLabel.label, labelCategories);
+      let [categoryToUpdate, canAddLabel] = getCategoryAndAddability(newLabel.label, labelCategories);
+
+      console.log('categoryToUpdate:', categoryToUpdate);
+      console.log('canAddLabel:', canAddLabel);
+
+      if (!canAddLabel && labelCategories[categoryToUpdate].size > 0) {
+        console.log("canAddLabel: false, labelCategories[categoryToUpdate].size > 0");
+        const existingLabel = [...labelCategories[categoryToUpdate]][0];
+        console.log('negating existingLabel: ', existingLabel);
+        await server.createLabels({ uri: did }, { negate: [existingLabel] });
+        console.log('negated existingLabel: ', existingLabel);
+        labelCategories[categoryToUpdate].clear();
+        canAddLabel = true;
+      }
 
       if (canAddLabel) {
+        console.log('canAddLabel: true');
+        console.log(`Adding label '${newLabel.label}' to DID: ${did}`);
         await server
           .createLabel({ uri: did, val: newLabel.label })
           .catch((err) => {
@@ -64,10 +85,15 @@ export const label = async (subject: string | AppBskyActorDefs.ProfileView, rkey
 };
 
 function findLabelByPost(rkey: string) {
+  console.log('called findLabelByPost with rkey:', rkey);
   for (const category of ['sun', 'moon', 'rising'] as const) {
     const found = SIGNS[category].find((sign) => sign.post === rkey);
-    if (found) return found;
+    if (found) {
+      console.log('findLabelByPost found:', found);
+      return found;
+    }
   }
+  console.log('findLabelByPost did not find anything');
   return null;
 }
 
@@ -75,10 +101,11 @@ function getCategoryAndAddability(
   label: string,
   categories: { sun: Set<string>; moon: Set<string>; rising: Set<string> },
 ): ['sun' | 'moon' | 'rising', boolean] {
-  if (label.startsWith('aaa-sun-') && categories.sun.size === 0) return ['sun', true];
-  if (label.startsWith('bbb-moon-') && categories.moon.size === 0) return ['moon', true];
-  if (label.startsWith('ccc-rising-') && categories.rising.size === 0) return ['rising', true];
+  console.log('getCategoryAndAddability called with label:', label);
+  if (label.startsWith('aaa-sun-')) return ['sun', !categories.sun.has(label)];
+  if (label.startsWith('bbb-moon-')) return ['moon', !categories.moon.has(label)];
+  if (label.startsWith('ccc-rising-')) return ['rising', !categories.rising.has(label)];
   console.log('SOMETHING IS OFF:');
   console.log(label, categories);
-  throw new Error(`We really shouldn't be here`);
+  throw new Error(`Invalid label: ${label}`);
 }
