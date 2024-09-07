@@ -78,5 +78,7 @@ function getCategoryAndAddability(
   if (label.startsWith('aaa-sun-') && categories.sun.size === 0) return ['sun', true];
   if (label.startsWith('bbb-moon-') && categories.moon.size === 0) return ['moon', true];
   if (label.startsWith('ccc-rising-') && categories.rising.size === 0) return ['rising', true];
+  console.log('SOMETHING IS OFF:');
+  console.log(label, categories);
   throw new Error(`We really shouldn't be here`);
 }
