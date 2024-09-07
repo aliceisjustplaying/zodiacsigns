@@ -25,9 +25,9 @@ export const label = async (subject: string | AppBskyActorDefs.ProfileView, rkey
 
   query.forEach((label) => {
     if (!label.neg) {
-      if (label.val.startsWith('sun-')) labelCategories.sun.add(label.val);
-      else if (label.val.startsWith('moon-')) labelCategories.moon.add(label.val);
-      else if (label.val.startsWith('rising-')) labelCategories.rising.add(label.val);
+      if (label.val.startsWith('aaa-sun-')) labelCategories.sun.add(label.val);
+      else if (label.val.startsWith('bbb-moon-')) labelCategories.moon.add(label.val);
+      else if (label.val.startsWith('ccc-rising-')) labelCategories.rising.add(label.val);
     }
   });
 
@@ -75,8 +75,8 @@ function getCategoryAndAddability(
   label: string,
   categories: { sun: Set<string>; moon: Set<string>; rising: Set<string> },
 ): ['sun' | 'moon' | 'rising', boolean] {
-  if (label.startsWith('sun-') && categories.sun.size === 0) return ['sun', true];
-  if (label.startsWith('moon-') && categories.moon.size === 0) return ['moon', true];
-  if (label.startsWith('rising-') && categories.rising.size === 0) return ['rising', true];
+  if (label.startsWith('aaa-sun-') && categories.sun.size === 0) return ['sun', true];
+  if (label.startsWith('bbb-moon-') && categories.moon.size === 0) return ['moon', true];
+  if (label.startsWith('ccc-rising-') && categories.rising.size === 0) return ['rising', true];
   throw new Error(`We really shouldn't be here`);
 }
