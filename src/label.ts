@@ -31,10 +31,20 @@ export const label = async (subject: string | AppBskyActorDefs.ProfileView, rkey
   console.dir(labelCategories, { depth: null });
 
   if (rkey.includes(DELETE)) {
-    const deleteQuery = server.db.prepare<unknown[], ComAtprotoLabelDefs.Label>(`SELECT * FROM labels WHERE uri = ? AND neg = false`).all(did);
+    const deleteQuery = server.db.prepare<unknown[], ComAtprotoLabelDefs.Label>(
+      `SELECT l1.* 
+       FROM labels l1
+       LEFT JOIN labels l2 ON l1.uri = l2.uri AND l1.val = l2.val AND l2.neg = true
+       WHERE l1.uri = ? AND l1.neg = false AND l2.val IS NULL`
+    ).all(did);
     const labelsToDelete = deleteQuery.map(label => label.val);
 
-    console.log('Deleting all labels for', did);
+    if (labelsToDelete.length === 0) {
+      console.log('No labels to mass-delete for ', did);
+      return;
+    }
+
+    console.log('Mass-deleting all labels for ', did);
     await server
       .createLabels(
         { uri: did },
