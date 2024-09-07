@@ -6,7 +6,7 @@ const server = new LabelerServer({ did: DID, signingKey: SIGNING_KEY });
 
 server.start(PORT, (error, address) => {
   if (error) {
-    console.error(error);
+    console.error('Error starting server:', error);
   } else {
     console.log(`Labeler server listening on ${address}`);
   }
@@ -14,105 +14,119 @@ server.start(PORT, (error, address) => {
 
 export const label = async (subject: string | AppBskyActorDefs.ProfileView, rkey: string) => {
   const did = AppBskyActorDefs.isProfileView(subject) ? subject.did : subject;
-
   console.log(`Labeling ${did}...`);
+  console.log('Received rkey:', rkey);
 
-  const sunQuery = server.db.prepare<unknown[], ComAtprotoLabelDefs.Label>(`SELECT * FROM labels WHERE uri = ? AND val LIKE 'aaa-sun-%' AND neg = false ORDER BY cts DESC LIMIT 1`).all(did);
-  const moonQuery = server.db.prepare<unknown[], ComAtprotoLabelDefs.Label>(`SELECT * FROM labels WHERE uri = ? AND val LIKE 'bbb-moon-%' AND neg = false ORDER BY cts DESC LIMIT 1`).all(did);
-  const risingQuery = server.db.prepare<unknown[], ComAtprotoLabelDefs.Label>(`SELECT * FROM labels WHERE uri = ? AND val LIKE 'ccc-rising-%' AND neg = false ORDER BY cts DESC LIMIT 1`).all(did);
+  try {
+    const labelCategories = await fetchCurrentLabels(did);
 
-  const labelCategories = {
-    sun: new Set<string>(sunQuery.map(label => label.val)),
-    moon: new Set<string>(moonQuery.map(label => label.val)),
-    rising: new Set<string>(risingQuery.map(label => label.val)),
-  };
-
-  console.log('labelCategories:');
-  console.dir(labelCategories, { depth: null });
-
-  if (rkey.includes(DELETE)) {
-    const deleteQuery = server.db.prepare<unknown[], ComAtprotoLabelDefs.Label>(
-      `SELECT l1.* 
-       FROM labels l1
-       LEFT JOIN labels l2 ON l1.uri = l2.uri AND l1.val = l2.val AND l2.neg = true
-       WHERE l1.uri = ? AND l1.neg = false AND l2.val IS NULL`
-    ).all(did);
-    const labelsToDelete = deleteQuery.map(label => label.val);
-
-    if (labelsToDelete.length === 0) {
-      console.log('No labels to mass-delete for ', did);
-      return;
+    if (rkey.includes(DELETE)) {
+      console.log('Delete operation detected');
+      await massDeleteLabels(did, labelCategories);
+    } else {
+      console.log('Add/Update operation detected');
+      await addOrUpdateLabel(did, rkey, labelCategories);
     }
-
-    console.log('Mass-deleting all labels for ', did);
-    await server
-      .createLabels(
-        { uri: did },
-        { negate: [...labelsToDelete] },
-      )
-      .catch((err) => {
-        console.log(err);
-      })
-      .then(() => console.log(`Deleted all labels for ${did}`));
-  } else {
-    const newLabel = findLabelByPost(rkey);
-    if (newLabel) {
-      let [categoryToUpdate, canAddLabel] = getCategoryAndAddability(newLabel.label, labelCategories);
-
-      console.log('categoryToUpdate:', categoryToUpdate);
-      console.log('canAddLabel:', canAddLabel);
-
-      if (!canAddLabel && labelCategories[categoryToUpdate].size > 0) {
-        console.log("canAddLabel: false, labelCategories[categoryToUpdate].size > 0");
-        const existingLabel = [...labelCategories[categoryToUpdate]][0];
-        console.log('negating existingLabel: ', existingLabel);
-        await server.createLabels({ uri: did }, { negate: [existingLabel] });
-        console.log('negated existingLabel: ', existingLabel);
-        labelCategories[categoryToUpdate].clear();
-        canAddLabel = true;
-      }
-
-      if (canAddLabel) {
-        console.log('canAddLabel: true');
-        console.log(`Adding label '${newLabel.label}' to DID: ${did}`);
-        await server
-          .createLabel({ uri: did, val: newLabel.label })
-          .catch((err) => {
-            console.log(err);
-          })
-          .then(() => {
-            console.log(`Labeled ${did} with ${newLabel.label}`);
-            labelCategories[categoryToUpdate].add(newLabel.label);
-          });
-      } else {
-        console.log(`Cannot add label ${newLabel.label} to ${did}.`);
-      }
-    }
+  } catch (error) {
+    console.error('Error in label function:', error);
   }
 };
 
+async function fetchCurrentLabels(did: string) {
+  console.log('Fetching current labels for:', did);
+  const categories = ['sun', 'moon', 'rising'];
+  const labelCategories: Record<string, string | null> = {};
+
+  for (const category of categories) {
+    const prefix = category === 'sun' ? 'aaa-' : category === 'moon' ? 'bbb-' : 'ccc-';
+    const query = server.db
+      .prepare<
+        unknown[],
+        ComAtprotoLabelDefs.Label
+      >(`SELECT * FROM labels WHERE uri = ? AND val LIKE '${prefix}${category}-%' AND neg = false ORDER BY cts DESC LIMIT 1`)
+      .all(did);
+    labelCategories[category] = query.length > 0 ? query[0].val : null;
+    console.log(`${category} label:`, labelCategories[category]);
+  }
+
+  return labelCategories;
+}
+
+async function massDeleteLabels(did: string, labelCategories: Record<string, string | null>) {
+  console.log('Attempting to mass-delete labels for:', did);
+  const labelsToDelete = Object.values(labelCategories).filter((label) => label !== null) as string[];
+
+  if (labelsToDelete.length === 0) {
+    console.log('No labels to mass-delete for', did);
+    return;
+  }
+
+  console.log('Labels to delete:', labelsToDelete);
+  try {
+    await server.createLabels({ uri: did }, { negate: labelsToDelete });
+    console.log(`Successfully deleted all labels for ${did}`);
+  } catch (error) {
+    console.error('Error during mass deletion:', error);
+  }
+}
+
+async function addOrUpdateLabel(did: string, rkey: string, labelCategories: Record<string, string | null>) {
+  console.log('Adding or updating label for:', did);
+  const newLabel = findLabelByPost(rkey);
+  if (!newLabel) {
+    console.log('No matching label found for rkey:', rkey);
+    return;
+  }
+
+  const category = getCategoryFromLabel(newLabel.label);
+  const existingLabel = labelCategories[category];
+
+  console.log('Category:', category);
+  console.log('Existing label:', existingLabel);
+  console.log('New label:', newLabel.label);
+
+  if (existingLabel && existingLabel !== newLabel.label) {
+    console.log('Negating existing label:', existingLabel);
+    try {
+      await server.createLabels({ uri: did }, { negate: [existingLabel] });
+      console.log('Successfully negated existing label');
+    } catch (error) {
+      console.error('Error negating existing label:', error);
+    }
+  }
+
+  if (!existingLabel || existingLabel !== newLabel.label) {
+    console.log('Adding new label:', newLabel.label);
+    try {
+      await server.createLabel({ uri: did, val: newLabel.label });
+      console.log(`Successfully labeled ${did} with ${newLabel.label}`);
+      labelCategories[category] = newLabel.label;
+    } catch (error) {
+      console.error('Error adding new label:', error);
+    }
+  } else {
+    console.log(`Label ${newLabel.label} already exists for ${did}`);
+  }
+}
+
 function findLabelByPost(rkey: string) {
-  console.log('called findLabelByPost with rkey:', rkey);
+  console.log('Finding label for rkey:', rkey);
   for (const category of ['sun', 'moon', 'rising'] as const) {
     const found = SIGNS[category].find((sign) => sign.post === rkey);
     if (found) {
-      console.log('findLabelByPost found:', found);
+      console.log('Found label:', found);
       return found;
     }
   }
-  console.log('findLabelByPost did not find anything');
+  console.log('No label found for rkey:', rkey);
   return null;
 }
 
-function getCategoryAndAddability(
-  label: string,
-  categories: { sun: Set<string>; moon: Set<string>; rising: Set<string> },
-): ['sun' | 'moon' | 'rising', boolean] {
-  console.log('getCategoryAndAddability called with label:', label);
-  if (label.startsWith('aaa-sun-')) return ['sun', !categories.sun.has(label)];
-  if (label.startsWith('bbb-moon-')) return ['moon', !categories.moon.has(label)];
-  if (label.startsWith('ccc-rising-')) return ['rising', !categories.rising.has(label)];
-  console.log('SOMETHING IS OFF:');
-  console.log(label, categories);
+function getCategoryFromLabel(label: string): 'sun' | 'moon' | 'rising' {
+  console.log('Getting category for label:', label);
+  if (label.startsWith('aaa-sun-')) return 'sun';
+  if (label.startsWith('bbb-moon-')) return 'moon';
+  if (label.startsWith('ccc-rising-')) return 'rising';
+  console.error('Invalid label:', label);
   throw new Error(`Invalid label: ${label}`);
 }
