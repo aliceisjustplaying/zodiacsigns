@@ -43,9 +43,30 @@ async function fetchCurrentLabels(did: string) {
       .prepare<
         unknown[],
         ComAtprotoLabelDefs.Label
-      >(`SELECT * FROM labels WHERE uri = ? AND val LIKE '${prefix}${category}-%' AND neg = false ORDER BY cts DESC LIMIT 1`)
+      >(`SELECT * FROM labels WHERE uri = ? AND val LIKE '${prefix}${category}-%' ORDER BY cts DESC`)
       .all(did);
-    labelCategories[category] = query.length > 0 ? query[0].val : null;
+
+    let currentLabel: string | null = null;
+    let negationCount = 0;
+    let additionCount = 0;
+
+    for (const label of query) {
+      if (label.neg) {
+        negationCount++;
+      } else {
+        additionCount++;
+        if (!currentLabel) {
+          currentLabel = label.val;
+        }
+      }
+    }
+
+    if (negationCount > additionCount) {
+      console.warn(`Warning: More negations than additions for ${category} (${did}). Database may be inconsistent.`);
+      currentLabel = null; // Treat as if no label was set
+    }
+
+    labelCategories[category] = currentLabel;
     console.log(`${category} label:`, labelCategories[category]);
   }
 
