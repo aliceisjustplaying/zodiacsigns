@@ -73,11 +73,11 @@ export const SIGNS: Record<
     {
       post: '3l3lhueqe5l2n',
       label: 'ccc-rising-capricorn',
-      displayLabel: '⬆️♑',
+      displayLabel: '⬆️ ♑',
       enDesc: 'Capricorn',
       brDesc: 'Capricórnio',
     },
-    { post: '3l3lhujywjw2t', label: 'ccc-rising-aquarius', displayLabel: '⬆️♒', enDesc: 'Aquarius', brDesc: 'Aquário' },
-    { post: '3l3lhuqczcj2n', label: 'ccc-rising-pisces', displayLabel: '⬆️♓', enDesc: 'Pisces', brDesc: 'Peixes' },
+    { post: '3l3lhujywjw2t', label: 'ccc-rising-aquarius', displayLabel: '⬆️ ♒', enDesc: 'Aquarius', brDesc: 'Aquário' },
+    { post: '3l3lhuqczcj2n', label: 'ccc-rising-pisces', displayLabel: '⬆️ ♓', enDesc: 'Pisces', brDesc: 'Peixes' },
   ],
 };
