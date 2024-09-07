@@ -3,7 +3,7 @@ import 'dotenv/config';
 export const DID = process.env.DID ?? '';
 export const SIGNING_KEY = process.env.SIGNING_KEY ?? '';
 export const PORT = 4002;
-export const DELETE = '3l3lfjnk2zb2n';
+export const DELETE = '3l3lu2lrpkl2a';
 export const SIGNS: Record<
   'sun' | 'moon' | 'rising',
   Array<{ post: string; label: string; displayLabel: string; enDesc: string; brDesc: string }>
