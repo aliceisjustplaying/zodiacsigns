@@ -37,7 +37,7 @@ export const label = async (subject: string | AppBskyActorDefs.ProfileView, rkey
 function fetchCurrentLabels(did: string) {
   console.log('Fetching current labels for:', did);
   const categories = ['sun', 'moon', 'rising'];
-  const labelCategories: Record<string, string | null> = {};
+  const labelCategories: Record<string, Set<string>> = {};
 
   for (const category of categories) {
     const prefix = category === 'sun' ? 'aaa-' : category === 'moon' ? 'bbb-' : 'ccc-';
@@ -48,36 +48,22 @@ function fetchCurrentLabels(did: string) {
       >(`SELECT * FROM labels WHERE uri = ? AND val LIKE '${prefix}${category}-%' ORDER BY cts DESC`)
       .all(did);
 
-    let currentLabel: string | null = null;
-    let negationCount = 0;
-    let additionCount = 0;
+    const labels = query.reduce((set, label) => {
+      if (!label.neg) set.add(label.val);
+      else set.delete(label.val);
+      return set;
+    }, new Set<string>());
 
-    for (const label of query) {
-      if (label.neg) {
-        negationCount++;
-      } else {
-        additionCount++;
-        if (!currentLabel) {
-          currentLabel = label.val;
-        }
-      }
-    }
-
-    if (negationCount > additionCount) {
-      console.warn(`Warning: More negations than additions for ${category} (${did}). Database may be inconsistent.`);
-      currentLabel = null; // Treat as if no label was set
-    }
-
-    labelCategories[category] = currentLabel;
+    labelCategories[category] = labels;
     console.log(`${category} label:`, labelCategories[category]);
   }
 
   return labelCategories;
 }
 
-async function deleteAllLabels(did: string, labelCategories: Record<string, string | null>) {
+async function deleteAllLabels(did: string, labelCategories: Record<string, Set<string>>) {
   console.log('Attempting to delete all labels for:', did);
-  const labelsToDelete = Object.values(labelCategories).filter((label) => label !== null);
+  const labelsToDelete = Object.values(labelCategories).flatMap((set) => Array.from(set));
 
   if (labelsToDelete.length === 0) {
     console.log('No labels to delete for', did);
@@ -93,7 +79,7 @@ async function deleteAllLabels(did: string, labelCategories: Record<string, stri
   }
 }
 
-async function addOrUpdateLabel(did: string, rkey: string, labelCategories: Record<string, string | null>) {
+async function addOrUpdateLabel(did: string, rkey: string, labelCategories: Record<string, Set<string>>) {
   console.log('Adding or updating label for:', did);
   const newLabel = findLabelByPost(rkey);
   if (!newLabel) {
@@ -102,33 +88,29 @@ async function addOrUpdateLabel(did: string, rkey: string, labelCategories: Reco
   }
 
   const category = getCategoryFromLabel(newLabel.label);
-  const existingLabel = labelCategories[category];
+  const existingLabels = labelCategories[category];
 
   console.log('Category:', category);
-  console.log('Existing label:', existingLabel);
+  console.log('Existing labels:', existingLabels);
   console.log('New label:', newLabel.label);
 
-  if (existingLabel && existingLabel !== newLabel.label) {
-    console.log('Negating existing label:', existingLabel);
+  if (existingLabels.size > 0) {
+    console.log('Negating existing labels:', existingLabels);
     try {
-      await server.createLabels({ uri: did }, { negate: [existingLabel] });
-      console.log('Successfully negated existing label');
+      await server.createLabels({ uri: did }, { negate: Array.from(existingLabels) });
+      console.log('Successfully negated existing labels');
     } catch (error) {
-      console.error('Error negating existing label:', error);
+      console.error('Error negating existing labels:', error);
     }
   }
 
-  if (!existingLabel || existingLabel !== newLabel.label) {
-    console.log('Adding new label:', newLabel.label);
-    try {
-      await server.createLabel({ uri: did, val: newLabel.label });
-      console.log(`Successfully labeled ${did} with ${newLabel.label}`);
-      labelCategories[category] = newLabel.label;
-    } catch (error) {
-      console.error('Error adding new label:', error);
-    }
-  } else {
-    console.log(`Label ${newLabel.label} already exists for ${did}`);
+  console.log('Adding new label:', newLabel.label);
+  try {
+    await server.createLabel({ uri: did, val: newLabel.label });
+    console.log(`Successfully labeled ${did} with ${newLabel.label}`);
+    labelCategories[category] = new Set([newLabel.label]);
+  } catch (error) {
+    console.error('Error adding new label:', error);
   }
 }
 
