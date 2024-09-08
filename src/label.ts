@@ -1,5 +1,7 @@
 import { AppBskyActorDefs, ComAtprotoLabelDefs } from '@atproto/api';
 import { DID, PORT, SIGNS, SIGNING_KEY, DELETE } from './constants.js';
+import { CATEGORY_PREFIXES } from './types.js';
+import type { Category } from './types.js';
 import { LabelerServer } from '@skyware/labeler';
 
 const server = new LabelerServer({ did: DID, signingKey: SIGNING_KEY });
@@ -15,14 +17,14 @@ server.start(PORT, (error, address) => {
 export const label = async (subject: string | AppBskyActorDefs.ProfileView, rkey: string) => {
   const did = AppBskyActorDefs.isProfileView(subject) ? subject.did : subject;
   console.log(`Labeling ${did}...`);
-  console.log('Received rkey:', rkey);
+  console.log(`Received rkey: ${rkey}`);
 
   try {
-    const labelCategories = await fetchCurrentLabels(did);
+    const labelCategories = fetchCurrentLabels(did);
 
     if (rkey.includes(DELETE)) {
       console.log('Delete operation detected');
-      await massDeleteLabels(did, labelCategories);
+      await deleteAllLabels(did, labelCategories);
     } else {
       console.log('Add/Update operation detected');
       await addOrUpdateLabel(did, rkey, labelCategories);
@@ -32,7 +34,7 @@ export const label = async (subject: string | AppBskyActorDefs.ProfileView, rkey
   }
 };
 
-async function fetchCurrentLabels(did: string) {
+function fetchCurrentLabels(did: string) {
   console.log('Fetching current labels for:', did);
   const categories = ['sun', 'moon', 'rising'];
   const labelCategories: Record<string, string | null> = {};
@@ -73,12 +75,12 @@ async function fetchCurrentLabels(did: string) {
   return labelCategories;
 }
 
-async function massDeleteLabels(did: string, labelCategories: Record<string, string | null>) {
-  console.log('Attempting to mass-delete labels for:', did);
-  const labelsToDelete = Object.values(labelCategories).filter((label) => label !== null) as string[];
+async function deleteAllLabels(did: string, labelCategories: Record<string, string | null>) {
+  console.log('Attempting to delete all labels for:', did);
+  const labelsToDelete = Object.values(labelCategories).filter((label) => label !== null);
 
   if (labelsToDelete.length === 0) {
-    console.log('No labels to mass-delete for', did);
+    console.log('No labels to delete for', did);
     return;
   }
 
@@ -143,11 +145,12 @@ function findLabelByPost(rkey: string) {
   return null;
 }
 
-function getCategoryFromLabel(label: string): 'sun' | 'moon' | 'rising' {
-  console.log('Getting category for label:', label);
-  if (label.startsWith('aaa-sun-')) return 'sun';
-  if (label.startsWith('bbb-moon-')) return 'moon';
-  if (label.startsWith('ccc-rising-')) return 'rising';
-  console.error('Invalid label:', label);
+function getCategoryFromLabel(label: string): Category {
+  for (const [category, prefix] of Object.entries(CATEGORY_PREFIXES)) {
+    if (label.startsWith(`${prefix}-${category}-`)) {
+      return category as Category;
+    }
+  }
+
   throw new Error(`Invalid label: ${label}`);
 }
