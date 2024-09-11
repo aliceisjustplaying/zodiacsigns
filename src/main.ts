@@ -14,12 +14,10 @@ const subscribe = () => {
   if (cursorFile) console.log(`Initiate firehose at cursor ${cursorFile}`);
 
   ws.on('error', (err) => {
-    console.log('ws.on(error)');
     console.error(err);
   });
 
   ws.on('open', () => {
-    console.log('ws.on(open)');
     intervalID = setInterval(() => {
       console.log(`${new Date().toISOString()}: ${cursor}`);
       fs.writeFile('cursor.txt', cursor.toString(), (err) => {
@@ -29,12 +27,10 @@ const subscribe = () => {
   });
 
   ws.on('close', () => {
-    console.log('ws.on(close)');
     clearInterval(intervalID);
   });
 
   ws.on('message', (data) => {
-    console.log('ws.on(message)');
     if (data instanceof Buffer) {
       const event: EventStream = JSON.parse(data.toString()) as EventStream;
       cursor = event.time_us;
