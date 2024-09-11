@@ -31,10 +31,8 @@ const connectWithBackoff = (url: string, onMessage: (data: Buffer) => void) => {
       if (retries < MAX_RETRIES) {
         const delay = Math.min(INITIAL_DELAY * Math.pow(2, retries), MAX_DELAY);
         console.log(`Connection closed. Reconnecting in ${delay}ms... (Attempt ${retries + 1}/${MAX_RETRIES})`);
-        setTimeout(() => {
-          retries++;
-          connect();
-        }, delay);
+        retries++;
+        setTimeout(connect, delay);
       } else {
         console.error('Max retries reached. Stopping reconnection attempts.');
       }
@@ -91,7 +89,7 @@ const subscribe = () => {
     fs.writeFile('cursor.txt', cursor.toString(), (err) => {
       if (err) console.error('Error writing to cursor.txt:', err);
     });
-  }, 60000);
+  }, 10000);
 
   return () => {
     clearInterval(intervalID);
