@@ -7,17 +7,8 @@ import WebSocket from 'ws';
 const subscribe = () => {
   let cursor = 0;
   let intervalID: NodeJS.Timeout;
-  let cursorFile = '';
-
-  if (fs.existsSync('cursor.txt')) {
-    console.log('Loading cursor from cursor.txt');
-    cursorFile = fs.readFileSync('cursor.txt', 'utf8');
-  } else {
-    fs.writeFileSync('cursor.txt', '', 'utf8');
-    console.log('Created new empty cursor.txt file, as it did not exist');
-  }
-
-  const relay = RELAY.concat('&cursor=', cursorFile);
+  const cursorFile = fs.readFileSync("cursor.txt", "utf8");
+  const relay = cursorFile ? RELAY.concat("&cursor=", cursorFile) : RELAY;
   console.log(`Connecting to ${relay}`);
   const ws = new WebSocket(relay);
   if (cursorFile) console.log(`Initiate firehose at cursor ${cursorFile}`);
