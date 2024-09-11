@@ -4,82 +4,99 @@ import { EventStream } from './types.js';
 import fs from 'node:fs';
 import { URL } from 'node:url';
 import WebSocket from 'ws';
-import { setTimeout } from 'timers/promises';
 
-const subscribe = () => {
-  let cursor = 0;
-  let intervalID: NodeJS.Timeout;
-  let cursorFile = '';
-  let reconnectAttempts = 0;
-  const maxReconnectAttempts = 10;
-  const maxReconnectDelay = 60000;
+const MAX_RETRIES = 10;
+const INITIAL_DELAY = 1000;
+const MAX_DELAY = 60000;
 
-  if (fs.existsSync('cursor.txt')) {
-    console.log('Loading cursor from cursor.txt');
-    cursorFile = fs.readFileSync('cursor.txt', 'utf8');
-  } else {
-    const currentTimeInMicroseconds = BigInt(Date.now()) * 1000n;
-    cursorFile = currentTimeInMicroseconds.toString();
-    fs.writeFileSync('cursor.txt', cursorFile, 'utf8');
-    console.log('Created a new cursor.txt with current time in microseconds');
-  }
+const connectWithBackoff = (url: string, onMessage: (data: Buffer) => void) => {
+  let retries = 0;
+  let ws: WebSocket;
 
-  const connectWebSocket = () => {
-    const relayURL = new URL(RELAY);
-    relayURL.searchParams.set('cursor', cursorFile);
-    const relay = relayURL.toString();
-    console.log(`Connecting to ${relay}`);
-    const ws = new WebSocket(relay);
-    console.log(`Initiate firehose at cursor ${cursorFile}`);
-
-    ws.on('error', (err) => {
-      console.error(err);
-    });
+  const connect = () => {
+    ws = new WebSocket(url);
 
     ws.on('open', () => {
-      intervalID = setInterval(() => {
-        console.log(`${new Date().toISOString()}: ${cursor}`);
-        fs.writeFile('cursor.txt', cursor.toString(), (err) => {
-          if (err) console.log(err);
-        });
-      }, 60000);
-    });
-
-    ws.on('close', () => {
-      console.log('WebSocket connection closed');
-      clearInterval(intervalID);
-
-      if (reconnectAttempts < maxReconnectAttempts) {
-        const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), maxReconnectDelay);
-        console.log(`Attempting to reconnect in ${delay}ms (Attempt ${reconnectAttempts + 1}/${maxReconnectAttempts})`);
-        void setTimeout(delay);
-        reconnectAttempts++;
-
-        connectWebSocket();
-      } else {
-        console.log('Max reconnection attempts reached. Giving up.');
-      }
+      console.log(`Connected to ${url}`);
+      retries = 0;
     });
 
     ws.on('message', (data) => {
       if (data instanceof Buffer) {
-        const event: EventStream = JSON.parse(data.toString()) as EventStream;
-        cursor = event.time_us;
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        if (event.commit?.record?.subject?.uri?.includes(`${DID}/app.bsky.feed.post`)) {
-          label(event.did, event.commit.record.subject.uri.split('/').pop()!)
-            .catch((err: unknown) => {
-              console.error(err);
-            })
-            .finally(() => {
-              console.log(`Labeling function done for ${event.commit?.record.subject.uri}`);
-            });
-        }
+        onMessage(data);
       }
+    });
+
+    ws.on('close', () => {
+      if (retries < MAX_RETRIES) {
+        const delay = Math.min(INITIAL_DELAY * Math.pow(2, retries), MAX_DELAY);
+        console.log(`Connection closed. Reconnecting in ${delay}ms... (Attempt ${retries + 1}/${MAX_RETRIES})`);
+        setTimeout(() => {
+          retries++;
+          connect();
+        }, delay);
+      } else {
+        console.error('Max retries reached. Stopping reconnection attempts.');
+      }
+    });
+
+    ws.on('error', (err) => {
+      console.error('WebSocket error:', err);
     });
   };
 
-  connectWebSocket();
+  connect();
+  return () => {
+    ws.close();
+  };
+};
+
+const subscribe = () => {
+  let cursor = 0;
+  let intervalID: NodeJS.Timeout;
+
+  const cursorFile = fs.existsSync('cursor.txt')
+    ? fs.readFileSync('cursor.txt', 'utf8')
+    : (BigInt(Date.now()) * 1000n).toString();
+
+  if (!fs.existsSync('cursor.txt')) {
+    fs.writeFileSync('cursor.txt', cursorFile, 'utf8');
+    console.log('Created a new cursor.txt with current time in microseconds');
+  } else {
+    console.log('Loading cursor from cursor.txt');
+  }
+
+  const relayURL = new URL(RELAY);
+  relayURL.searchParams.set('cursor', cursorFile);
+  const relay = relayURL.toString();
+  console.log(`Connecting to ${relay}`);
+
+  const closeConnection = connectWithBackoff(relay, (data) => {
+    const event: EventStream = JSON.parse(data.toString()) as EventStream;
+    cursor = event.time_us;
+    if (event.commit?.record.subject.uri.includes(`${DID}/app.bsky.feed.post`)) {
+      label(event.did, event.commit.record.subject.uri.split('/').pop()!)
+        .catch((err: unknown) => {
+          console.error('Error in label function:', err);
+        })
+        .finally(() => {
+          console.log(`Labeling function done for ${event.commit?.record.subject.uri}`);
+        });
+    }
+  });
+
+  // eslint-disable-next-line prefer-const
+  intervalID = setInterval(() => {
+    console.log(`${new Date().toISOString()}: ${cursor}`);
+    fs.writeFile('cursor.txt', cursor.toString(), (err) => {
+      if (err) console.error('Error writing to cursor.txt:', err);
+    });
+  }, 60000);
+
+  return () => {
+    clearInterval(intervalID);
+    closeConnection();
+  };
 };
 
 subscribe();
