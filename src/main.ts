@@ -18,6 +18,7 @@ const subscribe = () => {
   }
 
   const relay = RELAY.concat('&cursor=', cursorFile);
+  console.log(`Connecting to ${relay}`);
   const ws = new WebSocket(relay);
   if (cursorFile) console.log(`Initiate firehose at cursor ${cursorFile}`);
 
