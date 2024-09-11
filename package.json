@@ -10,17 +10,17 @@
     "@eslint/js": "^9.10.0",
     "@types/better-sqlite3": "^7.6.11",
     "@types/eslint__js": "^8.42.3",
-    "@types/node": "^20.14.10",
+    "@types/node": "^20.16.5",
     "@types/ws": "^8.5.12",
     "eslint": "^9.10.0",
     "prettier": "^3.3.3",
-    "typescript": "^5.5.4",
-    "typescript-eslint": "^8.4.0"
+    "typescript": "^5.6.2",
+    "typescript-eslint": "^8.5.0"
   },
   "dependencies": {
-    "@atproto/api": "^0.13.0",
+    "@atproto/api": "^0.13.6",
     "@skyware/firehose": "^0.3.1",
-    "@skyware/labeler": "^0.1.2-fix.1",
+    "@skyware/labeler": "^0.1.6",
     "bufferutil": "^4.0.8",
     "dotenv": "^16.4.5",
     "ws": "^8.18.0"
