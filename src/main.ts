@@ -72,7 +72,8 @@ const subscribe = () => {
   const closeConnection = connectWithBackoff(relay, (data) => {
     const event: EventStream = JSON.parse(data.toString()) as EventStream;
     cursor = event.time_us;
-    if (event.commit?.record.subject.uri.includes(`${DID}/app.bsky.feed.post`)) {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (event.commit?.record?.subject?.uri?.includes(`${DID}/app.bsky.feed.post`)) {
       label(event.did, event.commit.record.subject.uri.split('/').pop()!)
         .catch((err: unknown) => {
           console.error('Error in label function:', err);
