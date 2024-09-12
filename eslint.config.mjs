@@ -8,12 +8,19 @@ export default tseslint.config(
   {
     languageOptions: {
       parserOptions: {
-        project: './tsconfig.json',
+        projectService: {
+          allowDefaultProject: ['*.js'],
+          defaultProject: 'tsconfig.json',
+        },
       },
     },
     rules: {
       '@typescript-eslint/no-non-null-assertion': 'off',
       '@typescript-eslint/restrict-template-expressions': 'off',
     },
+  },
+  {
+    files: ['eslint.config.mjs'],
+    extends: [tseslint.configs.disableTypeChecked],
   },
 );

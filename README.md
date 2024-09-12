@@ -10,7 +10,7 @@ SIGNING_KEY = "xxx"
 BSKY_IDENTIFIER = "xxx"
 BSKY_PASSWORD = "xxx"
 PORT = 4002
-RELAY = "ws://localhost:6008/subscribe"
+FIREHOSE_URL = "ws://localhost:6008/subscribe"
 ```
 
 A `cursor.txt` also needs to be present with the time in microseconds. If it doesn't exist, it will be created with the current time.

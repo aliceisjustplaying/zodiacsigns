@@ -1,7 +1,8 @@
-import { setLabelerLabelDefinitions, type LoginCredentials } from '@skyware/labeler/scripts';
 import { type ComAtprotoLabelDefs } from '@atproto/api';
-import { SIGNS } from './constants.js';
+import { type LoginCredentials, setLabelerLabelDefinitions } from '@skyware/labeler/scripts';
 import 'dotenv/config';
+
+import { SIGNS } from './constants.js';
 
 const loginCredentials: LoginCredentials = {
   identifier: process.env.BSKY_IDENTIFIER!,

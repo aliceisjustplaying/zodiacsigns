@@ -1,8 +1,9 @@
 import { AppBskyActorDefs, ComAtprotoLabelDefs } from '@atproto/api';
-import { DID, PORT, SIGNS, SIGNING_KEY, DELETE } from './constants.js';
+import { LabelerServer } from '@skyware/labeler';
+
+import { DELETE, DID, PORT, SIGNING_KEY, SIGNS } from './constants.js';
 import { CATEGORY_PREFIXES } from './types.js';
 import type { Category } from './types.js';
-import { LabelerServer } from '@skyware/labeler';
 
 const server = new LabelerServer({ did: DID, signingKey: SIGNING_KEY });
 
@@ -45,7 +46,10 @@ function fetchCurrentLabels(did: string) {
 
   for (const category of categories) {
     console.group(`Category: ${category}`);
-    const prefix = category === 'sun' ? 'aaa-' : category === 'moon' ? 'bbb-' : 'ccc-';
+    const prefix =
+      category === 'sun' ? 'aaa-'
+      : category === 'moon' ? 'bbb-'
+      : 'ccc-';
     const query = server.db
       .prepare<
         unknown[],

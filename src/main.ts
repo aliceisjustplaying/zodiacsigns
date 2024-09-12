@@ -1,61 +1,63 @@
-import { label } from './label.js';
-import { DID, RELAY } from './constants.js';
-import { EventStream } from './types.js';
+import { CommitCreateEvent, Jetstream } from '@skyware/jetstream';
 import fs from 'node:fs';
-import { URL } from 'node:url';
-import WebSocket from 'ws';
 
-const subscribe = () => {
-  let cursor = 0;
-  let intervalID: NodeJS.Timeout;
-  let cursorFile: string;
+import { DID, FIREHOSE_URL, METRICS_PORT, WANTED_COLLECTION } from './constants.js';
+import { label } from './label.js';
+import logger from './logger.js';
+import { startMetricsServer } from './metrics.js';
 
-  try {
-    cursorFile = fs.readFileSync('cursor.txt', 'utf8');
-  } catch (error) {
-    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
-      cursorFile = (BigInt(Date.now()) * 1000n).toString();
-      fs.writeFileSync('cursor.txt', cursorFile, 'utf8');
-    } else {
-      console.error(error);
-      process.exit(1);
-    }
+let cursor = 0;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+let cursorUpdateInterval: NodeJS.Timeout;
+let cursorFile: string;
+
+try {
+  cursorFile = fs.readFileSync('cursor.txt', 'utf8');
+} catch (error) {
+  if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+    cursorFile = (BigInt(Date.now()) * 1000n).toString();
+    fs.writeFileSync('cursor.txt', cursorFile, 'utf8');
+  } else {
+    console.error(error);
+    process.exit(1);
   }
+}
 
-  const relayURL = new URL(RELAY);
-  relayURL.searchParams.set('cursor', cursorFile);
-  const ws = new WebSocket(relayURL.toString());
-  console.log(`Connected to Jetstream at cursor ${cursorFile}`);
+const jetstream = new Jetstream({
+  wantedCollections: [WANTED_COLLECTION],
+  endpoint: FIREHOSE_URL,
+  cursor: cursor.toString(),
+});
 
-  ws.on('error', (err) => {
-    console.error(err);
-  });
+jetstream.on('open', () => {
+  logger.info('Connected to Jetstream');
+  cursorUpdateInterval = setInterval(() => {
+    console.log(`Cursor updated at ${new Date().toISOString()} to: ${cursor}`);
+    fs.writeFile('cursor.txt', cursor.toString(), (err) => {
+      if (err) console.log(err);
+    });
+  }, 10000);
+});
 
-  ws.on('open', () => {
-    intervalID = setInterval(() => {
-      console.log(`${new Date().toISOString()}: ${cursor}`);
-      fs.writeFile('cursor.txt', cursor.toString(), (err) => {
-        if (err) console.log(err);
-      });
-    }, 60000);
-  });
+jetstream.on('close', () => {
+  logger.info('Jetstream connection closed.');
+});
 
-  ws.on('close', () => {
-    clearInterval(intervalID);
-  });
+jetstream.on('error', (error) => {
+  logger.error(`Jetstream error: ${error.message}`);
+});
 
-  ws.on('message', (data: WebSocket.RawData) => {
-    if (data instanceof Buffer) {
-      const event: EventStream = JSON.parse(data.toString()) as EventStream;
-      cursor = event.time_us;
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      if (event.commit?.record?.subject?.uri?.includes(`${DID}/app.bsky.feed.post`))
-        label(event.did, event.commit.record.subject.uri.split('/').pop()!).catch((error: unknown) => {
-          console.error(`Unexpected error labeling ${event.did}:`);
-          console.error(error);
-        });
-    }
-  });
-};
+jetstream.onCreate(WANTED_COLLECTION, (event: CommitCreateEvent<typeof WANTED_COLLECTION>) => {
+  cursor = event.time_us;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  if (event.commit?.record?.subject?.uri?.includes(DID)) {
+    label(event.did, event.commit.record.subject.uri.split('/').pop()!).catch((error: unknown) => {
+      console.error(`Unexpected error labeling ${event.did}:`);
+      console.error(error);
+    });
+  }
+});
 
-subscribe();
+jetstream.start();
+
+startMetricsServer(METRICS_PORT);
