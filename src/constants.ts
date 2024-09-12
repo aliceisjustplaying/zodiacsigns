@@ -4,6 +4,7 @@ import 'dotenv/config';
 export const DID = process.env.DID ?? '';
 export const SIGNING_KEY = process.env.SIGNING_KEY ?? '';
 export const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 4002;
+export const RELAY = process.env.RELAY ?? "ws://localhost:6008/subscribe";
 export const DELETE = '3l3lu2lrpkl2a';
 
 export const SIGNS: SignsRecord = {

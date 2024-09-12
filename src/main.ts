@@ -1,66 +1,61 @@
-import { AppBskyFeedLike } from '@atproto/api';
-import { Firehose } from '@skyware/firehose';
 import { label } from './label.js';
-import { DID } from './constants.js';
+import { DID, RELAY } from './constants.js';
+import { EventStream } from './types.js';
 import fs from 'node:fs';
+import { URL } from 'node:url';
+import WebSocket from 'ws';
 
 const subscribe = () => {
-  let cursorFirehose = 0;
+  let cursor = 0;
   let intervalID: NodeJS.Timeout;
-  let cursor: string | undefined = undefined;
+  let cursorFile: string;
 
-  if (fs.existsSync('cursor.txt')) {
-    console.log('Loading cursor from cursor.txt');
-    cursor = fs.readFileSync('cursor.txt', 'utf8');
-  } else {
-    fs.writeFileSync('cursor.txt', '', 'utf8');
-    console.log('Created new empty cursor.txt file, as it did not exist');
+  try {
+    cursorFile = fs.readFileSync('cursor.txt', 'utf8');
+  } catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+      cursorFile = (BigInt(Date.now()) * 1000n).toString();
+      fs.writeFileSync('cursor.txt', cursorFile, 'utf8');
+    } else {
+      console.error(error);
+      process.exit(1);
+    }
   }
 
-  const firehose = new Firehose({ cursor });
-  if (cursor) console.log(`Initiate firehose at cursor ${cursor}`);
+  const relayURL = new URL(RELAY);
+  relayURL.searchParams.set('cursor', cursorFile);
+  const ws = new WebSocket(relayURL.toString());
+  console.log(`Connected to Jetstream at cursor ${cursorFile}`);
 
-  firehose.on('error', ({ cursor, error }) => {
-    // this is a noisy bug with brid.gy, ignore it for now
-    if (!(error.name === 'RangeError' && error.message.includes('Could not decode varint'))) {
-      console.error(`Firehose errored on cursor: ${cursor}`, error);
-    }
+  ws.on('error', (err) => {
+    console.error(err);
   });
 
-  firehose.on('open', () => {
+  ws.on('open', () => {
     intervalID = setInterval(() => {
-      const timestamp = new Date().toISOString();
-      console.log(`${timestamp} cursor: ${cursorFirehose}`);
-      fs.writeFile('cursor.txt', cursorFirehose.toString(), (err) => {
-        if (err) console.error(err);
+      console.log(`${new Date().toISOString()}: ${cursor}`);
+      fs.writeFile('cursor.txt', cursor.toString(), (err) => {
+        if (err) console.log(err);
       });
     }, 60000);
   });
 
-  firehose.on('close', () => {
+  ws.on('close', () => {
     clearInterval(intervalID);
   });
 
-  firehose.on('commit', (commit) => {
-    cursorFirehose = commit.seq;
-    commit.ops.forEach((op) => {
-      if (op.action !== 'delete' && AppBskyFeedLike.isRecord(op.record)) {
-        if (op.record.subject.uri.includes(DID)) {
-          if (op.record.subject.uri.includes('app.bsky.feed.post')) {
-            label(commit.repo, op.record.subject.uri.split('/').pop()!)
-              .catch((err: unknown) => {
-                console.error(err);
-              })
-              .finally(() => {
-                console.log('--- labeling done ---');
-              });
-          }
-        }
-      }
-    });
+  ws.on('message', (data: WebSocket.RawData) => {
+    if (data instanceof Buffer) {
+      const event: EventStream = JSON.parse(data.toString()) as EventStream;
+      cursor = event.time_us;
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (event.commit?.record?.subject?.uri?.includes(`${DID}/app.bsky.feed.post`))
+        label(event.did, event.commit.record.subject.uri.split('/').pop()!).catch((error: unknown) => {
+          console.error(`Unexpected error labeling ${event.did}:`);
+          console.error(error);
+        });
+    }
   });
-
-  firehose.start();
 };
 
 subscribe();
