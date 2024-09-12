@@ -11,9 +11,6 @@ importers:
       '@atproto/api':
         specifier: ^0.13.7
         version: 0.13.7
-      '@skyware/firehose':
-        specifier: ^0.3.1
-        version: 0.3.1(bufferutil@4.0.8)
       '@skyware/labeler':
         specifier: ^0.1.6
         version: 0.1.6(bufferutil@4.0.8)
@@ -72,47 +69,23 @@ packages:
   '@atproto/api@0.13.7':
     resolution: {integrity: sha512-41kSLmFWDbuPOenb52WRq1lnBkSZrL+X29tWcvEt6SZXK4xBoKAalw1MjF+oabhzff12iMtNaNvmmt2fu1L+cw==}
 
-  '@atproto/common-web@0.2.4':
-    resolution: {integrity: sha512-6+DOhQcTklFmeiSkZRx6iFeqi4OFtGl4yEDGATk00q4tEcPoPvyOBtYHN6+G9lrfJIfx5RfmggamvXlJv1PxxA==}
-
   '@atproto/common-web@0.3.0':
     resolution: {integrity: sha512-67VnV6JJyX+ZWyjV7xFQMypAgDmjVaR9ZCuU/QW+mqlqI7fex2uL4Fv+7/jHadgzhuJHVd6OHOvNn0wR5WZYtA==}
-
-  '@atproto/common@0.3.4':
-    resolution: {integrity: sha512-qjOHcyeHjGRJseYbdnl+0PViDlMRN9GR0/1ToGKAmXh0voz4LbBWU1FwtGF7CvTlbom9MZYhu21lF5pD5RqBwQ==}
 
   '@atproto/common@0.4.2':
     resolution: {integrity: sha512-tv9lHjaoXW7CQrXUiu81RJZJ/bgcPSMaXrrgN4DxS08Z97hor0jgxThlwmGny1p6ksTZ5/bCX9GeJqi/b4LDCg==}
 
-  '@atproto/crypto@0.3.0':
-    resolution: {integrity: sha512-bhcxRTL4fgRY2YX/St0x4o0oDUp18QIPD7ek+7v8UKA0HpsCGQYbo8w9d9hUvwwty5X5p00cYF2tbggUWaPy7A==}
-
   '@atproto/crypto@0.4.1':
     resolution: {integrity: sha512-7pQNHWYyx8jGhYdPbmcuPD9W73nd/5v3mfBlncO0sBzxnPbmA6aXAWOz+fNVZwHwBJPeb/Gzf/FT/uDx7/eYFg==}
-
-  '@atproto/identity@0.3.3':
-    resolution: {integrity: sha512-i5d3eOnXQAXuOrjdm4NcveIBJxdEywYJQ4d74/JOgy27bGdNVFgh9FdZAsOseQRkLv4r7mr0I0C6OlSA2BQIxA==}
 
   '@atproto/identity@0.4.1':
     resolution: {integrity: sha512-5AoPJDSD0rAay/6Sib+n/FjfwGulM/+xCNxwwDLR9QI4EoeUlvIH8g5BNdix812v312/Qd42kJrLpCNTZ5rvew==}
 
-  '@atproto/lexicon@0.3.3':
-    resolution: {integrity: sha512-6FOjdc3V05JKrtkhjfhHMS7f/4hMJOeHNtoE3Na7iFMpzBz0Lw5sw8kIFKY8pc8IG79qGcFgELyHLsljZYX+5A==}
-
   '@atproto/lexicon@0.4.1':
     resolution: {integrity: sha512-bzyr+/VHXLQWbumViX5L7h1NKQObfs8Z+XZJl43OUK8nYFUI4e/sW1IZKRNfw7Wvi5YVNK+J+yP3DWIBZhkCYA==}
 
-  '@atproto/repo@0.3.9':
-    resolution: {integrity: sha512-1TZvvIy0XQihdXPd9JALh04sGbOlr82zk9TxtxVmLX2jic6g5Pl48aB4R1TjvoRiVMAsQVh3VLRVbUN4o66eVg==}
-
-  '@atproto/syntax@0.2.1':
-    resolution: {integrity: sha512-ImOuiICtB5h78j90hAYOfTYzr5q5Wut0irNdELiogA3i74a8EXThe+j6Tj8snanYggrShbu5c6BDc1tVj477Yw==}
-
   '@atproto/syntax@0.3.0':
     resolution: {integrity: sha512-Weq0ZBxffGHDXHl9U7BQc2BFJi/e23AL+k+i5+D9hUq/bzT4yjGsrCejkjq0xt82xXDjmhhvQSZ0LqxyZ5woxA==}
-
-  '@atproto/xrpc-server@0.4.4':
-    resolution: {integrity: sha512-R4uYvuia+tUM4wATLlKmMhr/+VEaSImhuAhD7jEHIjN3a+ZxDBE5PnW3PwWf68VBqw720JJ+jmsJMZO7v9y6FA==}
 
   '@atproto/xrpc-server@0.6.4':
     resolution: {integrity: sha512-AL9okOTpJpxh3wJjT27RiPkp2IWIxDPCyyvuO1SJu0E9URGfWZL26SlT7/IR/tadZTJezr5+ZNuxhV0uhI+s1A==}
@@ -203,9 +176,6 @@ packages:
     resolution: {integrity: sha512-d2CGZR2o7fS6sWB7DG/3a95bGKQyHMACZ5aW8qGkkqQpUoZV6C0X7Pc7l4ZNMZkfNBf4VWNe9E1jRsf0G146Ew==}
     engines: {node: '>=18.18'}
 
-  '@ipld/car@3.2.4':
-    resolution: {integrity: sha512-rezKd+jk8AsTGOoJKqzfjLJ3WVft7NZNH95f0pfPbicROvzTyvHCNy567HzSUd6gRXZ9im29z5ZEv9Hw49jSYw==}
-
   '@ipld/dag-cbor@7.0.3':
     resolution: {integrity: sha512-1VVh2huHsuohdXC1bGJNE8WR72slZ9XE2T3wbBBq31dm7ZBatmKLLxrB+XAqafxfRFjv08RZmj/W/ZqaM13AuA==}
 
@@ -228,9 +198,6 @@ packages:
   '@nodelib/fs.walk@1.2.8':
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
-
-  '@skyware/firehose@0.3.1':
-    resolution: {integrity: sha512-krL44TRi3/4Q35AihnZ19WxcoubULets3cxVVVpQJKlOrm6Ups407zjgIh0Y+4mqf0g3HchYD1DHaUdcwc1+Qw==}
 
   '@skyware/labeler@0.1.6':
     resolution: {integrity: sha512-qz1uNetOA+VpXvwu2yu1N5BvSXYcTqodQZ1CW1akHT48hwcSOQIfl9Kdq0afafbKa5YCrEuTJcWNGUM+kSs3Jg==}
@@ -1308,9 +1275,6 @@ packages:
     resolution: {integrity: sha512-pMZTvIkT1d+TFGvDOqodOclx0QWkkgi6Tdoa8gC8ffGAAqz9pzPTZWAybbsHHoED/ztMtkv/VoYTYyShUn81hA==}
     engines: {node: '>= 0.4.0'}
 
-  varint@6.0.0:
-    resolution: {integrity: sha512-cXEIW6cfr15lFv563k4GuVuW/fiwjknytD37jIOLSdSWuOI6WnO/oKwmP2FQTU2l01LP8/M5TSAJpzUaGe3uWg==}
-
   vary@1.1.2:
     resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
     engines: {node: '>= 0.8'}
@@ -1343,9 +1307,6 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
 
-  zod@3.21.4:
-    resolution: {integrity: sha512-m46AKbrzKVzOzs/DZgVnG5H55N1sv1M8qZU3A8RIKbs3mrACDNeIOeilDymVb2HdmP8uwshOCF4uJ8uM9rCqJw==}
-
   zod@3.23.8:
     resolution: {integrity: sha512-XBx9AXhXktjUqnepgTiE5flcKIYWi/rme0Eaj+5Y0lftuGBq+jyRu/md4WnuxqgP1ubdpNCsYEYPxrzVHD8d6g==}
 
@@ -1377,29 +1338,12 @@ snapshots:
       tlds: 1.254.0
       zod: 3.23.8
 
-  '@atproto/common-web@0.2.4':
-    dependencies:
-      graphemer: 1.4.0
-      multiformats: 9.9.0
-      uint8arrays: 3.0.0
-      zod: 3.23.8
-
   '@atproto/common-web@0.3.0':
     dependencies:
       graphemer: 1.4.0
       multiformats: 9.9.0
       uint8arrays: 3.0.0
       zod: 3.23.8
-
-  '@atproto/common@0.3.4':
-    dependencies:
-      '@atproto/common-web': 0.2.4
-      '@ipld/dag-cbor': 7.0.3
-      cbor-x: 1.6.0
-      iso-datestring-validator: 2.2.2
-      multiformats: 9.9.0
-      pino: 8.21.0
-      zod: 3.21.4
 
   '@atproto/common@0.4.2':
     dependencies:
@@ -1410,25 +1354,11 @@ snapshots:
       multiformats: 9.9.0
       pino: 8.21.0
 
-  '@atproto/crypto@0.3.0':
-    dependencies:
-      '@noble/curves': 1.6.0
-      '@noble/hashes': 1.5.0
-      uint8arrays: 3.0.0
-
   '@atproto/crypto@0.4.1':
     dependencies:
       '@noble/curves': 1.6.0
       '@noble/hashes': 1.5.0
       uint8arrays: 3.0.0
-
-  '@atproto/identity@0.3.3':
-    dependencies:
-      '@atproto/common-web': 0.2.4
-      '@atproto/crypto': 0.3.0
-      axios: 0.27.2
-    transitivePeerDependencies:
-      - debug
 
   '@atproto/identity@0.4.1':
     dependencies:
@@ -1438,14 +1368,6 @@ snapshots:
     transitivePeerDependencies:
       - debug
 
-  '@atproto/lexicon@0.3.3':
-    dependencies:
-      '@atproto/common-web': 0.2.4
-      '@atproto/syntax': 0.2.1
-      iso-datestring-validator: 2.2.2
-      multiformats: 9.9.0
-      zod: 3.23.8
-
   '@atproto/lexicon@0.4.1':
     dependencies:
       '@atproto/common-web': 0.3.0
@@ -1454,45 +1376,7 @@ snapshots:
       multiformats: 9.9.0
       zod: 3.23.8
 
-  '@atproto/repo@0.3.9':
-    dependencies:
-      '@atproto/common': 0.3.4
-      '@atproto/common-web': 0.2.4
-      '@atproto/crypto': 0.3.0
-      '@atproto/identity': 0.3.3
-      '@atproto/lexicon': 0.3.3
-      '@atproto/syntax': 0.2.1
-      '@ipld/car': 3.2.4
-      '@ipld/dag-cbor': 7.0.3
-      multiformats: 9.9.0
-      uint8arrays: 3.0.0
-      zod: 3.23.8
-    transitivePeerDependencies:
-      - debug
-
-  '@atproto/syntax@0.2.1':
-    dependencies:
-      '@atproto/common-web': 0.2.4
-
   '@atproto/syntax@0.3.0': {}
-
-  '@atproto/xrpc-server@0.4.4(bufferutil@4.0.8)':
-    dependencies:
-      '@atproto/common': 0.3.4
-      '@atproto/crypto': 0.3.0
-      '@atproto/lexicon': 0.3.3
-      cbor-x: 1.6.0
-      express: 4.21.0
-      http-errors: 2.0.0
-      mime-types: 2.1.35
-      rate-limiter-flexible: 2.4.2
-      uint8arrays: 3.0.0
-      ws: 8.18.0(bufferutil@4.0.8)
-      zod: 3.23.8
-    transitivePeerDependencies:
-      - bufferutil
-      - supports-color
-      - utf-8-validate
 
   '@atproto/xrpc-server@0.6.4(bufferutil@4.0.8)':
     dependencies:
@@ -1602,12 +1486,6 @@ snapshots:
 
   '@humanwhocodes/retry@0.3.0': {}
 
-  '@ipld/car@3.2.4':
-    dependencies:
-      '@ipld/dag-cbor': 7.0.3
-      multiformats: 9.9.0
-      varint: 6.0.0
-
   '@ipld/dag-cbor@7.0.3':
     dependencies:
       cborg: 1.10.2
@@ -1630,17 +1508,6 @@ snapshots:
     dependencies:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.17.1
-
-  '@skyware/firehose@0.3.1(bufferutil@4.0.8)':
-    dependencies:
-      '@atproto/repo': 0.3.9
-      '@atproto/xrpc-server': 0.4.4(bufferutil@4.0.8)
-      ws: 8.18.0(bufferutil@4.0.8)
-    transitivePeerDependencies:
-      - bufferutil
-      - debug
-      - supports-color
-      - utf-8-validate
 
   '@skyware/labeler@0.1.6(bufferutil@4.0.8)':
     dependencies:
@@ -2803,8 +2670,6 @@ snapshots:
 
   utils-merge@1.0.1: {}
 
-  varint@6.0.0: {}
-
   vary@1.1.2: {}
 
   which@2.0.2:
@@ -2820,7 +2685,5 @@ snapshots:
       bufferutil: 4.0.8
 
   yocto-queue@0.1.0: {}
-
-  zod@3.21.4: {}
 
   zod@3.23.8: {}
