@@ -1,5 +1,5 @@
 import { AppBskyActorDefs, ComAtprotoLabelDefs } from '@atproto/api';
-import { DID, PORT, SIGNS, SIGNING_KEY, DELETE } from './constants.js';
+import { DID, PORT, TEAMS, SIGNING_KEY, DELETE } from './constants.js';
 import { CATEGORY_PREFIXES } from './types.js';
 import type { Category } from './types.js';
 import { LabelerServer } from '@skyware/labeler';
@@ -40,7 +40,7 @@ export const label = async (subject: string | AppBskyActorDefs.ProfileView, rkey
 function fetchCurrentLabels(did: string) {
   console.group('Fetching current labels');
   console.log('DID:', did);
-  const categories = ['sun', 'moon', 'rising'];
+  const categories = ['nfl'];
   const labelCategories: Record<string, Set<string>> = {};
 
   for (const category of categories) {
@@ -131,8 +131,8 @@ async function addOrUpdateLabel(did: string, rkey: string, labelCategories: Reco
 function findLabelByPost(rkey: string) {
   console.group('Finding label...');
   console.log('rkey:', rkey);
-  for (const category of ['sun', 'moon', 'rising'] as const) {
-    const found = SIGNS[category].find((sign) => sign.post === rkey);
+  for (const category of ['nfl'] as const) {
+    const found = TEAMS[category].find((team) => team.post === rkey);
     if (found) {
       console.log('Found label:', found);
       console.groupEnd();
