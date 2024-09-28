@@ -7,7 +7,6 @@ interface NFLTeam {
   label: `${CategoryPrefix}-${Category}-${string}`;
   displayLabel: string;
   enDesc: string;
-  brDesc: string;
 }
 
 export type TeamsRecord = Record<Category, NFLTeam[]>;

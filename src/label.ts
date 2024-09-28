@@ -45,7 +45,7 @@ function fetchCurrentLabels(did: string) {
 
   for (const category of categories) {
     console.group(`Category: ${category}`);
-    const prefix = category === 'sun' ? 'aaa-' : category === 'moon' ? 'bbb-' : 'ccc-';
+    const prefix = category === 'nfl' ? 'aaa-' : '';
     const query = server.db
       .prepare<
         unknown[],
