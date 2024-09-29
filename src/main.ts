@@ -7,7 +7,7 @@ import logger from './logger.js';
 import { startMetricsServer } from './metrics.js';
 
 let cursor = 0;
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 let cursorUpdateInterval: NodeJS.Timeout;
 let cursorFile: string;
 
@@ -60,4 +60,21 @@ jetstream.onCreate(WANTED_COLLECTION, (event: CommitCreateEvent<typeof WANTED_CO
 
 jetstream.start();
 
-startMetricsServer(METRICS_PORT);
+const metricsServer = startMetricsServer(METRICS_PORT);
+
+function shutdown() {
+  logger.info('Shutting down gracefully...');
+  jetstream.close();
+  metricsServer.close();
+  clearInterval(cursorUpdateInterval);
+  fs.writeFileSync('cursor.txt', cursor.toString(), 'utf8');
+  process.exit(0);
+
+  setTimeout(() => {
+    logger.error('Forcing shutdown.');
+    process.exit(1);
+  }, 60000);
+}
+
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
