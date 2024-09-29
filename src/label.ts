@@ -4,6 +4,7 @@ import { LabelerServer } from '@skyware/labeler';
 import { DELETE, DID, PORT, SIGNING_KEY, SIGNS } from './constants.js';
 import { CATEGORY_PREFIXES } from './types.js';
 import type { Category } from './types.js';
+import logger from './logger.js';
 
 const server = new LabelerServer({ did: DID, signingKey: SIGNING_KEY });
 
@@ -20,6 +21,10 @@ export const label = async (subject: string | AppBskyActorDefs.ProfileView, rkey
   console.group(`Labeling ${did}`);
   console.log(`Received rkey: ${rkey}`);
 
+  if (rkey === 'self') {
+    logger.info(`${DID} liked the labeler.`);
+    return;
+  }
   try {
     const labelCategories = fetchCurrentLabels(did);
 
