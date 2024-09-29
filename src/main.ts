@@ -65,7 +65,7 @@ const metricsServer = startMetricsServer(METRICS_PORT);
 
 labelerServer.start(PORT, (error, address) => {
   if (error) {
-    logger.error('Error starting server:', error);
+    logger.error('Error starting server: %s', error);
   } else {
     logger.info(`Labeler server listening on ${address}`);
   }

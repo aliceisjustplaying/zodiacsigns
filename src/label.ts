@@ -15,7 +15,7 @@ export const label = async (subject: string | AppBskyActorDefs.ProfileView, rkey
   logger.info(`Received rkey: ${rkey}`);
 
   if (rkey === 'self') {
-    logger.info(`${DID} liked the labeler.`);
+    logger.info(`${did} liked the labeler. Returning.`);
     return;
   }
   try {
@@ -31,15 +31,15 @@ export const label = async (subject: string | AppBskyActorDefs.ProfileView, rkey
       logger.info('<<< Added/updated labels');
     }
   } catch (error) {
-    logger.error('Error in `label` function:', error);
+    logger.error('Error in `label` function: %s', error);
   } finally {
-    logger.info(`<<< ${DID} labeling complete`);
+    logger.info(`<<< ${did} labeling complete`);
   }
 };
 
 function fetchCurrentLabels(did: string) {
   logger.info('>>> fetchCurrentLabels started');
-  logger.info('DID:', did);
+  logger.info('did: %s', did);
   const categories = ['sun', 'moon', 'rising'];
   const labelCategories: Record<string, Set<string>> = {};
 
@@ -63,7 +63,7 @@ function fetchCurrentLabels(did: string) {
     }, new Set<string>());
 
     labelCategories[category] = labels;
-    logger.info(`Labels:`, Array.from(labels));
+    logger.info(`Labels: ${Array.from(labels)}`);
     logger.info(`<<< Finding category ${category} complete`);
   }
 
@@ -73,18 +73,18 @@ function fetchCurrentLabels(did: string) {
 
 async function deleteAllLabels(did: string, labelCategories: Record<string, Set<string>>) {
   logger.info('>>> deleteAllLabels started');
-  logger.info('DID:', did);
+  logger.info('did: %s', did);
   const labelsToDelete = Object.values(labelCategories).flatMap((set) => Array.from(set));
 
   if (labelsToDelete.length === 0) {
     logger.info('No labels to delete');
   } else {
-    logger.info('Labels to delete:', labelsToDelete);
+    logger.info(`Labels to delete: ${labelsToDelete}`);
     try {
       await labelerServer.createLabels({ uri: did }, { negate: labelsToDelete });
       logger.info('Successfully deleted all labels');
     } catch (error) {
-      logger.error('Error deleting all labels:', error);
+      logger.error('Error deleting all labels: %s', error);
     } finally {
       logger.info('<<< deleteAllLabels returning');
     }
@@ -93,7 +93,7 @@ async function deleteAllLabels(did: string, labelCategories: Record<string, Set<
 
 async function addOrUpdateLabel(did: string, rkey: string, labelCategories: Record<string, Set<string>>) {
   logger.info('>>> addOrUpdateLabel');
-  logger.info('DID:', did, 'rkey:', rkey);
+  logger.info('did: %s, rkey: %s', did, rkey);
   const newLabel = findLabelByPost(rkey);
   if (!newLabel) {
     logger.info('No matching label found for rkey');
@@ -104,9 +104,9 @@ async function addOrUpdateLabel(did: string, rkey: string, labelCategories: Reco
   const category = getCategoryFromLabel(newLabel.label);
   const existingLabels = labelCategories[category];
 
-  logger.info('Category:', category);
-  logger.info('Existing labels:', existingLabels);
-  logger.info('New label:', newLabel.label);
+  logger.info(`Category: ${category}`);
+  logger.info(`Existing labels: ${Array.from(existingLabels)}`);
+  logger.info(`New label: ${newLabel.label}`);
 
   if (existingLabels.size > 0) {
     logger.info('>>> Negating existing labels');
@@ -114,7 +114,7 @@ async function addOrUpdateLabel(did: string, rkey: string, labelCategories: Reco
       await labelerServer.createLabels({ uri: did }, { negate: Array.from(existingLabels) });
       logger.info('Successfully negated existing labels');
     } catch (error) {
-      logger.error('Error negating existing labels:', error);
+      logger.error('Error negating existing labels: %s', error);
     } finally {
       logger.info('<<< Negating all labels complete');
     }
@@ -126,7 +126,7 @@ async function addOrUpdateLabel(did: string, rkey: string, labelCategories: Reco
     logger.info('Successfully labeled');
     labelCategories[category] = new Set([newLabel.label]);
   } catch (error) {
-    logger.error('Error adding new label:', error);
+    logger.error('Error adding new label: %s', error);
   } finally {
     logger.info('<<< Adding new label complete');
   }
@@ -136,11 +136,11 @@ async function addOrUpdateLabel(did: string, rkey: string, labelCategories: Reco
 
 function findLabelByPost(rkey: string) {
   logger.info('>>> findLabelByPost started');
-  logger.info('rkey:', rkey);
+  logger.info('rkey: %s', rkey);
   for (const category of ['sun', 'moon', 'rising'] as const) {
     const found = SIGNS[category].find((sign) => sign.post === rkey);
     if (found) {
-      logger.info('Found label:', found);
+      logger.info('Found label: %o', found);
       logger.info('<<< findLabelByPost returning');
       return found;
     }
