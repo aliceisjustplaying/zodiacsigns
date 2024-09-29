@@ -1,10 +1,11 @@
 import { AppBskyActorDefs, ComAtprotoLabelDefs } from '@atproto/api';
 import { LabelerServer } from '@skyware/labeler';
 
-import { DELETE, DID, PORT, SIGNING_KEY, SIGNS } from './constants.js';
+import { DID, PORT, SIGNING_KEY } from './config.js';
+import { DELETE, SIGNS } from './constants.js';
+import logger from './logger.js';
 import { CATEGORY_PREFIXES } from './types.js';
 import type { Category } from './types.js';
-import logger from './logger.js';
 
 const server = new LabelerServer({ did: DID, signingKey: SIGNING_KEY });
 

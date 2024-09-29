@@ -1,12 +1,12 @@
 import { type ComAtprotoLabelDefs } from '@atproto/api';
 import { type LoginCredentials, setLabelerLabelDefinitions } from '@skyware/labeler/scripts';
-import 'dotenv/config';
 
+import { BSKY_IDENTIFIER, BSKY_PASSWORD } from './config.js';
 import { SIGNS } from './constants.js';
 
 const loginCredentials: LoginCredentials = {
-  identifier: process.env.BSKY_IDENTIFIER!,
-  password: process.env.BSKY_PASSWORD!,
+  identifier: BSKY_IDENTIFIER,
+  password: BSKY_PASSWORD,
 };
 
 const labelDefinitions: ComAtprotoLabelDefs.LabelValueDefinition[] = [];

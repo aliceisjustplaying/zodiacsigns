@@ -1,13 +1,13 @@
 import { CommitCreateEvent, Jetstream } from '@skyware/jetstream';
 import fs from 'node:fs';
 
-import { DID, FIREHOSE_URL, METRICS_PORT, WANTED_COLLECTION } from './constants.js';
+import { DID, FIREHOSE_URL, METRICS_PORT, WANTED_COLLECTION } from './config.js';
 import { label } from './label.js';
 import logger from './logger.js';
 import { startMetricsServer } from './metrics.js';
 
 let cursor = 0;
- 
+
 let cursorUpdateInterval: NodeJS.Timeout;
 let cursorFile: string;
 
