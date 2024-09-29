@@ -1,21 +1,24 @@
 import { CommitCreateEvent, Jetstream } from '@skyware/jetstream';
 import fs from 'node:fs';
 
-import { DID, FIREHOSE_URL, METRICS_PORT, PORT, WANTED_COLLECTION } from './config.js';
+import { CURSOR_UPDATE_INTERVAL, DID, FIREHOSE_URL, METRICS_PORT, PORT, WANTED_COLLECTION } from './config.js';
 import { label, labelerServer } from './label.js';
 import logger from './logger.js';
 import { startMetricsServer } from './metrics.js';
 
 let cursor = 0;
 let cursorUpdateInterval: NodeJS.Timeout;
-let cursorFile: string;
 
 try {
-  cursorFile = fs.readFileSync('cursor.txt', 'utf8');
+  logger.info('Trying to read cursor from cursor.txt...');
+  cursor = Number(fs.readFileSync('cursor.txt', 'utf8'));
+  logger.info(`Cursor found: ${cursor} (${new Date(cursor / 1000).toISOString()})`);
 } catch (error) {
   if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
-    cursorFile = (BigInt(Date.now()) * 1000n).toString();
-    fs.writeFileSync('cursor.txt', cursorFile, 'utf8');
+    logger.info(
+      `Cursor not found in cursor.txt, setting cursor to: ${cursor} (${new Date(cursor / 1000).toISOString()})`,
+    );
+    fs.writeFileSync('cursor.txt', cursor.toString(), 'utf8');
   } else {
     logger.error(error);
     process.exit(1);
@@ -25,20 +28,21 @@ try {
 const jetstream = new Jetstream({
   wantedCollections: [WANTED_COLLECTION],
   endpoint: FIREHOSE_URL,
-  cursor: cursor.toString(),
+  cursor: cursor,
 });
 
 jetstream.on('open', () => {
-  logger.info('Connected to Jetstream');
+  logger.info(`Connected to Jetstream at ${FIREHOSE_URL}`);
   cursorUpdateInterval = setInterval(() => {
-    logger.info(`Cursor updated at ${new Date().toISOString()} to: ${cursor}`);
+    logger.info(`Cursor updated to: ${cursor} (${new Date(cursor / 1000).toISOString()})`);
     fs.writeFile('cursor.txt', cursor.toString(), (err) => {
       if (err) logger.error(err);
     });
-  }, 10000);
+  }, CURSOR_UPDATE_INTERVAL);
 });
 
 jetstream.on('close', () => {
+  clearInterval(cursorUpdateInterval);
   logger.info('Jetstream connection closed.');
 });
 
