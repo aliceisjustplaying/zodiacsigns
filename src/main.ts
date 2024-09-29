@@ -18,7 +18,7 @@ try {
     cursorFile = (BigInt(Date.now()) * 1000n).toString();
     fs.writeFileSync('cursor.txt', cursorFile, 'utf8');
   } else {
-    console.error(error);
+    logger.error(error);
     process.exit(1);
   }
 }
@@ -32,9 +32,9 @@ const jetstream = new Jetstream({
 jetstream.on('open', () => {
   logger.info('Connected to Jetstream');
   cursorUpdateInterval = setInterval(() => {
-    console.log(`Cursor updated at ${new Date().toISOString()} to: ${cursor}`);
+    logger.info(`Cursor updated at ${new Date().toISOString()} to: ${cursor}`);
     fs.writeFile('cursor.txt', cursor.toString(), (err) => {
-      if (err) console.log(err);
+      if (err) logger.error(err);
     });
   }, 10000);
 });
@@ -52,8 +52,8 @@ jetstream.onCreate(WANTED_COLLECTION, (event: CommitCreateEvent<typeof WANTED_CO
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (event.commit?.record?.subject?.uri?.includes(DID)) {
     label(event.did, event.commit.record.subject.uri.split('/').pop()!).catch((error: unknown) => {
-      console.error(`Unexpected error labeling ${event.did}:`);
-      console.error(error);
+      logger.error(`Unexpected error labeling ${event.did}:`);
+      logger.error(error);
     });
   }
 });
@@ -63,17 +63,17 @@ jetstream.start();
 const metricsServer = startMetricsServer(METRICS_PORT);
 
 function shutdown() {
+  setTimeout(() => {
+    logger.error('Forcing shutdown...');
+    process.exit(1);
+  }, 60000);
+
   logger.info('Shutting down gracefully...');
   jetstream.close();
   metricsServer.close();
   clearInterval(cursorUpdateInterval);
   fs.writeFileSync('cursor.txt', cursor.toString(), 'utf8');
   process.exit(0);
-
-  setTimeout(() => {
-    logger.error('Forcing shutdown.');
-    process.exit(1);
-  }, 60000);
 }
 
 process.on('SIGINT', shutdown);

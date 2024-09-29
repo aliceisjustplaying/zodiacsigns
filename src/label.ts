@@ -11,16 +11,16 @@ const server = new LabelerServer({ did: DID, signingKey: SIGNING_KEY });
 
 server.start(PORT, (error, address) => {
   if (error) {
-    console.error('Error starting server:', error);
+    logger.error('Error starting server:', error);
   } else {
-    console.log(`Labeler server listening on ${address}`);
+    logger.info(`Labeler server listening on ${address}`);
   }
 });
 
 export const label = async (subject: string | AppBskyActorDefs.ProfileView, rkey: string) => {
   const did = AppBskyActorDefs.isProfileView(subject) ? subject.did : subject;
-  console.group(`Labeling ${did}`);
-  console.log(`Received rkey: ${rkey}`);
+  logger.info(`>>> Labeling ${did}`);
+  logger.info(`Received rkey: ${rkey}`);
 
   if (rkey === 'self') {
     logger.info(`${DID} liked the labeler.`);
@@ -30,28 +30,29 @@ export const label = async (subject: string | AppBskyActorDefs.ProfileView, rkey
     const labelCategories = fetchCurrentLabels(did);
 
     if (rkey.includes(DELETE)) {
-      console.group('Deleting all labels...');
+      logger.info('>>> Deleting all labels');
       await deleteAllLabels(did, labelCategories);
-      console.groupEnd();
+      logger.info('<<< Deleted all labels');
     } else {
-      console.group('Adding/updating label...');
+      logger.info('>>> Adding/updating label...');
       await addOrUpdateLabel(did, rkey, labelCategories);
-      console.groupEnd();
+      logger.info('<<< Added/updated labels');
     }
   } catch (error) {
-    console.error('Error in `label` function:', error);
+    logger.error('Error in `label` function:', error);
+  } finally {
+    logger.info(`<<< ${DID} labeling complete`);
   }
-  console.groupEnd();
 };
 
 function fetchCurrentLabels(did: string) {
-  console.group('Fetching current labels');
-  console.log('DID:', did);
+  logger.info('>>> fetchCurrentLabels started');
+  logger.info('DID:', did);
   const categories = ['sun', 'moon', 'rising'];
   const labelCategories: Record<string, Set<string>> = {};
 
   for (const category of categories) {
-    console.group(`Category: ${category}`);
+    logger.info(`>>> Finding category ${category}`);
     const prefix =
       category === 'sun' ? 'aaa-'
       : category === 'moon' ? 'bbb-'
@@ -70,87 +71,90 @@ function fetchCurrentLabels(did: string) {
     }, new Set<string>());
 
     labelCategories[category] = labels;
-    console.log(`Labels:`, Array.from(labels));
-    console.groupEnd();
+    logger.info(`Labels:`, Array.from(labels));
+    logger.info(`<<< Finding category ${category} complete`);
   }
 
-  console.groupEnd();
+  logger.info('<<< fetchCurrentLabels returning');
   return labelCategories;
 }
 
 async function deleteAllLabels(did: string, labelCategories: Record<string, Set<string>>) {
-  console.group('Deleting all labels');
-  console.log('DID:', did);
+  logger.info('>>> deleteAllLabels started');
+  logger.info('DID:', did);
   const labelsToDelete = Object.values(labelCategories).flatMap((set) => Array.from(set));
 
   if (labelsToDelete.length === 0) {
-    console.log('No labels to delete');
+    logger.info('No labels to delete');
   } else {
-    console.log('Labels to delete:', labelsToDelete);
+    logger.info('Labels to delete:', labelsToDelete);
     try {
       await server.createLabels({ uri: did }, { negate: labelsToDelete });
-      console.log('Successfully deleted all labels');
+      logger.info('Successfully deleted all labels');
     } catch (error) {
-      console.error('Error during mass deletion:', error);
+      logger.error('Error deleting all labels:', error);
+    } finally {
+      logger.info('<<< deleteAllLabels returning');
     }
   }
-  console.groupEnd();
 }
 
 async function addOrUpdateLabel(did: string, rkey: string, labelCategories: Record<string, Set<string>>) {
-  console.group('Adding or updating label');
-  console.log('DID:', did, 'rkey:', rkey);
+  logger.info('>>> addOrUpdateLabel');
+  logger.info('DID:', did, 'rkey:', rkey);
   const newLabel = findLabelByPost(rkey);
   if (!newLabel) {
-    console.log('No matching label found for rkey');
-    console.groupEnd();
+    logger.info('No matching label found for rkey');
+    logger.info('<<< addOrUpdateLabel returning');
     return;
   }
 
   const category = getCategoryFromLabel(newLabel.label);
   const existingLabels = labelCategories[category];
 
-  console.log('Category:', category);
-  console.log('Existing labels:', existingLabels);
-  console.log('New label:', newLabel.label);
+  logger.info('Category:', category);
+  logger.info('Existing labels:', existingLabels);
+  logger.info('New label:', newLabel.label);
 
   if (existingLabels.size > 0) {
-    console.group('Negating existing labels');
+    logger.info('>>> Negating existing labels');
     try {
       await server.createLabels({ uri: did }, { negate: Array.from(existingLabels) });
-      console.log('Successfully negated existing labels');
+      logger.info('Successfully negated existing labels');
     } catch (error) {
-      console.error('Error negating existing labels:', error);
+      logger.error('Error negating existing labels:', error);
+    } finally {
+      logger.info('<<< Negating all labels complete');
     }
-    console.groupEnd();
   }
 
-  console.group('Adding new label');
+  logger.info('>>> Adding new label');
   try {
     await server.createLabel({ uri: did, val: newLabel.label });
-    console.log('Successfully labeled');
+    logger.info('Successfully labeled');
     labelCategories[category] = new Set([newLabel.label]);
   } catch (error) {
-    console.error('Error adding new label:', error);
+    logger.error('Error adding new label:', error);
+  } finally {
+    logger.info('<<< Adding new label complete');
   }
-  console.groupEnd();
 
-  console.groupEnd();
+  logger.info('<<< addOrUpdateLabel returning');
 }
 
 function findLabelByPost(rkey: string) {
-  console.group('Finding label...');
-  console.log('rkey:', rkey);
+  logger.info('>>> findLabelByPost started');
+  logger.info('rkey:', rkey);
   for (const category of ['sun', 'moon', 'rising'] as const) {
     const found = SIGNS[category].find((sign) => sign.post === rkey);
     if (found) {
-      console.log('Found label:', found);
-      console.groupEnd();
+      logger.info('Found label:', found);
+      logger.info('<<< findLabelByPost returning');
       return found;
     }
   }
-  console.log('No label found');
-  console.groupEnd();
+  logger.info('No label found');
+  logger.info('<<< findLabelByPost returning');
   return null;
 }
 
@@ -160,5 +164,6 @@ function getCategoryFromLabel(label: string): Category {
       return category as Category;
     }
   }
+
   throw new Error(`Invalid label: ${label}`);
 }
