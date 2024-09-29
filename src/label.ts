@@ -1,21 +1,13 @@
 import { AppBskyActorDefs, ComAtprotoLabelDefs } from '@atproto/api';
 import { LabelerServer } from '@skyware/labeler';
 
-import { DID, PORT, SIGNING_KEY } from './config.js';
+import { DID, SIGNING_KEY } from './config.js';
 import { DELETE, SIGNS } from './constants.js';
 import logger from './logger.js';
 import { CATEGORY_PREFIXES } from './types.js';
 import type { Category } from './types.js';
 
-const server = new LabelerServer({ did: DID, signingKey: SIGNING_KEY });
-
-server.start(PORT, (error, address) => {
-  if (error) {
-    logger.error('Error starting server:', error);
-  } else {
-    logger.info(`Labeler server listening on ${address}`);
-  }
-});
+export const labelerServer = new LabelerServer({ did: DID, signingKey: SIGNING_KEY });
 
 export const label = async (subject: string | AppBskyActorDefs.ProfileView, rkey: string) => {
   const did = AppBskyActorDefs.isProfileView(subject) ? subject.did : subject;
@@ -57,7 +49,7 @@ function fetchCurrentLabels(did: string) {
       category === 'sun' ? 'aaa-'
       : category === 'moon' ? 'bbb-'
       : 'ccc-';
-    const query = server.db
+    const query = labelerServer.db
       .prepare<
         unknown[],
         ComAtprotoLabelDefs.Label
@@ -89,7 +81,7 @@ async function deleteAllLabels(did: string, labelCategories: Record<string, Set<
   } else {
     logger.info('Labels to delete:', labelsToDelete);
     try {
-      await server.createLabels({ uri: did }, { negate: labelsToDelete });
+      await labelerServer.createLabels({ uri: did }, { negate: labelsToDelete });
       logger.info('Successfully deleted all labels');
     } catch (error) {
       logger.error('Error deleting all labels:', error);
@@ -119,7 +111,7 @@ async function addOrUpdateLabel(did: string, rkey: string, labelCategories: Reco
   if (existingLabels.size > 0) {
     logger.info('>>> Negating existing labels');
     try {
-      await server.createLabels({ uri: did }, { negate: Array.from(existingLabels) });
+      await labelerServer.createLabels({ uri: did }, { negate: Array.from(existingLabels) });
       logger.info('Successfully negated existing labels');
     } catch (error) {
       logger.error('Error negating existing labels:', error);
@@ -130,7 +122,7 @@ async function addOrUpdateLabel(did: string, rkey: string, labelCategories: Reco
 
   logger.info('>>> Adding new label');
   try {
-    await server.createLabel({ uri: did, val: newLabel.label });
+    await labelerServer.createLabel({ uri: did, val: newLabel.label });
     logger.info('Successfully labeled');
     labelCategories[category] = new Set([newLabel.label]);
   } catch (error) {

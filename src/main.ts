@@ -1,13 +1,12 @@
 import { CommitCreateEvent, Jetstream } from '@skyware/jetstream';
 import fs from 'node:fs';
 
-import { DID, FIREHOSE_URL, METRICS_PORT, WANTED_COLLECTION } from './config.js';
-import { label } from './label.js';
+import { DID, FIREHOSE_URL, METRICS_PORT, PORT, WANTED_COLLECTION } from './config.js';
+import { label, labelerServer } from './label.js';
 import logger from './logger.js';
 import { startMetricsServer } from './metrics.js';
 
 let cursor = 0;
-
 let cursorUpdateInterval: NodeJS.Timeout;
 let cursorFile: string;
 
@@ -58,9 +57,17 @@ jetstream.onCreate(WANTED_COLLECTION, (event: CommitCreateEvent<typeof WANTED_CO
   }
 });
 
-jetstream.start();
-
 const metricsServer = startMetricsServer(METRICS_PORT);
+
+labelerServer.start(PORT, (error, address) => {
+  if (error) {
+    logger.error('Error starting server:', error);
+  } else {
+    logger.info(`Labeler server listening on ${address}`);
+  }
+});
+
+jetstream.start();
 
 function shutdown() {
   setTimeout(() => {
@@ -70,6 +77,7 @@ function shutdown() {
 
   logger.info('Shutting down gracefully...');
   jetstream.close();
+  labelerServer.stop();
   metricsServer.close();
   clearInterval(cursorUpdateInterval);
   fs.writeFileSync('cursor.txt', cursor.toString(), 'utf8');
