@@ -32,7 +32,7 @@ const jetstream = new Jetstream({
 });
 
 jetstream.on('open', () => {
-  logger.info(`Connected to Jetstream at ${FIREHOSE_URL}`);
+  logger.info(`Connected to Jetstream at ${FIREHOSE_URL} with cursor ${jetstream.cursor}`);
   cursorUpdateInterval = setInterval(() => {
     if (jetstream.cursor) {
       logger.info(`Cursor updated to: ${jetstream.cursor} (${new Date(jetstream.cursor / 1000).toISOString()})`);
