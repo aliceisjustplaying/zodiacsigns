@@ -9,15 +9,17 @@ import { startMetricsServer } from './metrics.js';
 let cursor = 0;
 let cursorUpdateInterval: NodeJS.Timeout;
 
+function epochUsToDateTime(cursor: number): string {
+  return new Date(cursor / 1000).toISOString();
+}
+
 try {
   logger.info('Trying to read cursor from cursor.txt...');
   cursor = Number(fs.readFileSync('cursor.txt', 'utf8'));
-  logger.info(`Cursor found: ${cursor} (${new Date(cursor / 1000).toISOString()})`);
+  logger.info(`Cursor found: ${cursor} (${epochUsToDateTime(cursor)})`);
 } catch (error) {
   if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
-    logger.info(
-      `Cursor not found in cursor.txt, setting cursor to: ${cursor} (${new Date(cursor / 1000).toISOString()})`,
-    );
+    logger.info(`Cursor not found in cursor.txt, setting cursor to: ${cursor} (${epochUsToDateTime(cursor)})`);
     fs.writeFileSync('cursor.txt', cursor.toString(), 'utf8');
   } else {
     logger.error(error);
@@ -32,10 +34,12 @@ const jetstream = new Jetstream({
 });
 
 jetstream.on('open', () => {
-  logger.info(`Connected to Jetstream at ${FIREHOSE_URL} with cursor ${jetstream.cursor}`);
+  logger.info(
+    `Connected to Jetstream at ${FIREHOSE_URL} with cursor ${jetstream.cursor} (${epochUsToDateTime(jetstream.cursor!)})`,
+  );
   cursorUpdateInterval = setInterval(() => {
     if (jetstream.cursor) {
-      logger.info(`Cursor updated to: ${jetstream.cursor} (${new Date(jetstream.cursor / 1000).toISOString()})`);
+      logger.info(`Cursor updated to: ${jetstream.cursor} (${epochUsToDateTime(jetstream.cursor)})`);
       fs.writeFile('cursor.txt', cursor.toString(), (err) => {
         if (err) logger.error(err);
       });
