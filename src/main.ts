@@ -34,10 +34,12 @@ const jetstream = new Jetstream({
 jetstream.on('open', () => {
   logger.info(`Connected to Jetstream at ${FIREHOSE_URL}`);
   cursorUpdateInterval = setInterval(() => {
-    logger.info(`Cursor updated to: ${cursor} (${new Date(cursor / 1000).toISOString()})`);
-    fs.writeFile('cursor.txt', cursor.toString(), (err) => {
-      if (err) logger.error(err);
-    });
+    if (jetstream.cursor) {
+      logger.info(`Cursor updated to: ${jetstream.cursor} (${new Date(jetstream.cursor / 1000).toISOString()})`);
+      fs.writeFile('cursor.txt', cursor.toString(), (err) => {
+        if (err) logger.error(err);
+      });
+    }
   }, CURSOR_UPDATE_INTERVAL);
 });
 
@@ -51,12 +53,10 @@ jetstream.on('error', (error) => {
 });
 
 jetstream.onCreate(WANTED_COLLECTION, (event: CommitCreateEvent<typeof WANTED_COLLECTION>) => {
-  cursor = event.time_us;
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (event.commit?.record?.subject?.uri?.includes(DID)) {
     label(event.did, event.commit.record.subject.uri.split('/').pop()!).catch((error: unknown) => {
-      logger.error(`Unexpected error labeling ${event.did}:`);
-      logger.error(error);
+      logger.error(`Unexpected error labeling ${event.did}: ${error}`);
     });
   }
 });
@@ -85,7 +85,6 @@ function shutdown() {
   metricsServer.close();
   clearInterval(cursorUpdateInterval);
   fs.writeFileSync('cursor.txt', cursor.toString(), 'utf8');
-  process.exit(0);
 }
 
 process.on('SIGINT', shutdown);
