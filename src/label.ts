@@ -11,8 +11,7 @@ export const labelerServer = new LabelerServer({ did: DID, signingKey: SIGNING_K
 
 export const label = async (subject: string | AppBskyActorDefs.ProfileView, rkey: string) => {
   const did = AppBskyActorDefs.isProfileView(subject) ? subject.did : subject;
-  logger.info(`>>> Labeling ${did}`);
-  logger.info(`Received rkey: ${rkey}`);
+  logger.info(`Received rkey: ${rkey} for ${did}`);
 
   if (rkey === 'self') {
     logger.info(`${did} liked the labeler. Returning.`);
@@ -22,39 +21,27 @@ export const label = async (subject: string | AppBskyActorDefs.ProfileView, rkey
     const labelCategories = fetchCurrentLabels(did);
 
     if (rkey.includes(DELETE)) {
-      logger.info('>>> Deleting all labels');
       await deleteAllLabels(did, labelCategories);
-      logger.info('<<< Deleted all labels');
     } else {
-      logger.info('>>> Adding/updating label...');
       await addOrUpdateLabel(did, rkey, labelCategories);
-      logger.info('<<< Added/updated labels');
     }
   } catch (error) {
-    logger.error('Error in `label` function: %s', error);
-  } finally {
-    logger.info(`<<< ${did} labeling complete`);
+    logger.error(`Error in \`label\` function: ${error}`);
   }
 };
 
 function fetchCurrentLabels(did: string) {
-  logger.info('>>> fetchCurrentLabels started');
-  logger.info('did: %s', did);
   const categories = ['sun', 'moon', 'rising'];
   const labelCategories: Record<string, Set<string>> = {};
 
   for (const category of categories) {
-    logger.info(`>>> Finding category ${category}`);
-    const prefix =
-      category === 'sun' ? 'aaa-'
-      : category === 'moon' ? 'bbb-'
-      : 'ccc-';
+    const prefix = CATEGORY_PREFIXES[category as Category];
     const query = labelerServer.db
       .prepare<
         unknown[],
         ComAtprotoLabelDefs.Label
-      >(`SELECT * FROM labels WHERE uri = ? AND val LIKE '${prefix}${category}-%' ORDER BY cts DESC`)
-      .all(did);
+      >(`SELECT * FROM labels WHERE uri = ? AND val LIKE ? ORDER BY cts DESC`)
+      .all(did, `${prefix}-${category}-%`);
 
     const labels = query.reduce((set, label) => {
       if (!label.neg) set.add(label.val);
@@ -63,41 +50,32 @@ function fetchCurrentLabels(did: string) {
     }, new Set<string>());
 
     labelCategories[category] = labels;
-    logger.info(`Labels: ${Array.from(labels)}`);
-    logger.info(`<<< Finding category ${category} complete`);
+    logger.info(`Current labels: ${Array.from(labels).join(', ')}`);
   }
 
-  logger.info('<<< fetchCurrentLabels returning');
   return labelCategories;
 }
 
 async function deleteAllLabels(did: string, labelCategories: Record<string, Set<string>>) {
-  logger.info('>>> deleteAllLabels started');
-  logger.info('did: %s', did);
-  const labelsToDelete = Object.values(labelCategories).flatMap((set) => Array.from(set));
+  const labelsToDelete: string[] = Object.values(labelCategories).flatMap((set) => Array.from(set));
 
   if (labelsToDelete.length === 0) {
-    logger.info('No labels to delete');
+    logger.info(`No labels to delete`);
   } else {
-    logger.info(`Labels to delete: ${labelsToDelete}`);
+    logger.info(`Labels to delete: ${labelsToDelete.join(', ')}`);
     try {
       await labelerServer.createLabels({ uri: did }, { negate: labelsToDelete });
       logger.info('Successfully deleted all labels');
     } catch (error) {
-      logger.error('Error deleting all labels: %s', error);
-    } finally {
-      logger.info('<<< deleteAllLabels returning');
+      logger.error(`Error deleting all labels: ${error}`);
     }
   }
 }
 
 async function addOrUpdateLabel(did: string, rkey: string, labelCategories: Record<string, Set<string>>) {
-  logger.info('>>> addOrUpdateLabel');
-  logger.info('did: %s, rkey: %s', did, rkey);
   const newLabel = findLabelByPost(rkey);
   if (!newLabel) {
-    logger.info('No matching label found for rkey');
-    logger.info('<<< addOrUpdateLabel returning');
+    logger.info(`No matching label found for rkey: ${rkey}`);
     return;
   }
 
@@ -109,53 +87,35 @@ async function addOrUpdateLabel(did: string, rkey: string, labelCategories: Reco
   logger.info(`New label: ${newLabel.label}`);
 
   if (existingLabels.size > 0) {
-    logger.info('>>> Negating existing labels');
     try {
       await labelerServer.createLabels({ uri: did }, { negate: Array.from(existingLabels) });
       logger.info('Successfully negated existing labels');
     } catch (error) {
-      logger.error('Error negating existing labels: %s', error);
-    } finally {
-      logger.info('<<< Negating all labels complete');
+      logger.error(`Error negating existing labels: ${error}`);
     }
   }
 
-  logger.info('>>> Adding new label');
+  logger.info(`Adding new label ${newLabel.label} for ${did}`);
   try {
     await labelerServer.createLabel({ uri: did, val: newLabel.label });
     logger.info('Successfully labeled');
     labelCategories[category] = new Set([newLabel.label]);
   } catch (error) {
-    logger.error('Error adding new label: %s', error);
-  } finally {
-    logger.info('<<< Adding new label complete');
+    logger.error(`Error adding new label: ${error}`);
   }
-
-  logger.info('<<< addOrUpdateLabel returning');
 }
 
 function findLabelByPost(rkey: string) {
-  logger.info('>>> findLabelByPost started');
-  logger.info('rkey: %s', rkey);
   for (const category of ['sun', 'moon', 'rising'] as const) {
-    const found = SIGNS[category].find((sign) => sign.post === rkey);
-    if (found) {
-      logger.info('Found label: %o', found);
-      logger.info('<<< findLabelByPost returning');
-      return found;
+    const label = SIGNS[category].find((sign) => sign.post === rkey);
+    if (label) {
+      return label;
     }
   }
-  logger.info('No label found');
-  logger.info('<<< findLabelByPost returning');
-  return null;
 }
 
-function getCategoryFromLabel(label: string): Category {
-  for (const [category, prefix] of Object.entries(CATEGORY_PREFIXES)) {
-    if (label.startsWith(`${prefix}-${category}-`)) {
-      return category as Category;
-    }
-  }
-
-  throw new Error(`Invalid label: ${label}`);
-}
+const getCategoryFromLabel = (label: string): Category => {
+  return Object.entries(CATEGORY_PREFIXES).find(([category, prefix]) =>
+    label.startsWith(`${prefix}-${category}-`),
+  )?.[0] as Category;
+};
