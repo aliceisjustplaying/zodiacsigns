@@ -4,7 +4,13 @@
   "type": "module",
   "scripts": {
     "start": "npx tsx src/main.ts",
-    "dev": "npx tsx --watch src/main.ts"
+    "dev": "npx tsx --watch src/main.ts",
+    "format": "bunx prettier --write .",
+    "lint": "bunx eslint .",
+    "lint:fix": "bunx eslint --fix ."
+  },
+  "lint-staged": {
+    "*": "prettier --ignore-unknown --write"
   },
   "devDependencies": {
     "@eslint/js": "^9.11.1",
@@ -25,6 +31,8 @@
     "@skyware/labeler": "^0.1.7",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
+    "husky": "^9.1.6",
+    "lint-staged": "^15.2.10",
     "pino": "^9.4.0",
     "pino-pretty": "^11.2.2",
     "prom-client": "^15.1.3"
