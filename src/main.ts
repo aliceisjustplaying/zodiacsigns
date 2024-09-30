@@ -77,6 +77,7 @@ labelerServer.start(PORT, (error, address) => {
 
 jetstream.start();
 
+// this doesn't work properly, need to research why
 function shutdown() {
   try {
     logger.info('Shutting down gracefully...');
