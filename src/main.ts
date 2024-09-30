@@ -40,7 +40,7 @@ jetstream.on('open', () => {
   cursorUpdateInterval = setInterval(() => {
     if (jetstream.cursor) {
       logger.info(`Cursor updated to: ${jetstream.cursor} (${epochUsToDateTime(jetstream.cursor)})`);
-      fs.writeFile('cursor.txt', cursor.toString(), (err) => {
+      fs.writeFile('cursor.txt', jetstream.cursor.toString(), (err) => {
         if (err) logger.error(err);
       });
     }
@@ -78,17 +78,16 @@ labelerServer.start(PORT, (error, address) => {
 jetstream.start();
 
 function shutdown() {
-  setTimeout(() => {
-    logger.error('Forcing shutdown...');
+  try {
+    logger.info('Shutting down gracefully...');
+    fs.writeFileSync('cursor.txt', jetstream.cursor!.toString(), 'utf8');
+    jetstream.close();
+    labelerServer.stop();
+    metricsServer.close();
+  } catch (error) {
+    logger.error(`Error shutting down gracefully: ${error}`);
     process.exit(1);
-  }, 60000);
-
-  logger.info('Shutting down gracefully...');
-  jetstream.close();
-  labelerServer.stop();
-  metricsServer.close();
-  clearInterval(cursorUpdateInterval);
-  fs.writeFileSync('cursor.txt', cursor.toString(), 'utf8');
+  }
 }
 
 process.on('SIGINT', shutdown);
