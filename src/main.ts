@@ -19,6 +19,7 @@ try {
   logger.info(`Cursor found: ${cursor} (${epochUsToDateTime(cursor)})`);
 } catch (error) {
   if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+    cursor = Math.floor(Date.now() * 1000);
     logger.info(`Cursor not found in cursor.txt, setting cursor to: ${cursor} (${epochUsToDateTime(cursor)})`);
     fs.writeFileSync('cursor.txt', cursor.toString(), 'utf8');
   } else {
